@@ -32,3 +32,4 @@ class TGBot:
     def handle_callback(func):
         callbackHandler = CallbackQueryHandler(func)
         self.add(callbackHandler)
+# sdlfsdlf
