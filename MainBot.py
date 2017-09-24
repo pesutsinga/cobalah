@@ -1,12 +1,11 @@
-from pprint import pprint
-import telegram
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater
-from telegram.ext import CommandHandler, MessageHandler
-from telegram.ext import CallbackQueryHandler
-from time import gmtime, strftime
-import datetime
 import logging
+import telegram
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackQueryHandler
+from telegram.ext import CommandHandler, MessageHandler
+from telegram.ext import Updater
+from time import gmtime, strftime
 
 
 class TGBot:
@@ -32,4 +31,8 @@ class TGBot:
     def handle_callback(func):
         callbackHandler = CallbackQueryHandler(func)
         self.add(callbackHandler)
-# sdlfsdlf
+
+    def ask(question):
+        # TODO: Make q and a made easy
+        answer = ""
+        return answer
