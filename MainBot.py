@@ -32,7 +32,7 @@ class TGBot:
         callbackHandler = CallbackQueryHandler(func)
         self.add(callbackHandler)
 
-    def ask(question):
+    def ask(question, func):
         # TODO: Make q and a made easy
         answer = ""
         return answer
