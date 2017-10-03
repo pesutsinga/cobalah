@@ -2,8 +2,8 @@ from splinter import Browser
 
 
 class ChopeBrowser:
-    def __init__(self):
-        self.chrome = Browser('chrome')
+    def __init__(self, headless=False):
+        self.chrome = Browser('chrome', headless=headless)
 
     def login(self, usr, pwd, domain='STUDENT'):
         url = 'https://ntupcb.ntu.edu.sg'
@@ -44,12 +44,16 @@ class ChopeBrowser:
             evToday = []
             evList = columnDay.find_by_css('.ui-corner-all')
             for event in evList:
-                if self.is_registered(event):
-                    event = event.text
-                    if not event.find('—') == -1:
-                        if event == '':
-                            continue
-                        evToday.append(event.split('—'))
+                # biar gatebel gw bongkar ya dan
+                if event.has_class('noShowWhite'):
+                    continue
+                if event.has_class('currentEvent'):
+                    continue
+                if event.text == '':
+                    continue
+                eventText = event.text
+                if not eventText.find('—') == -1:
+                    evToday.append(eventText.split('—'))
             evWeek.append(evToday)
         evFacilities.append(evWeek)
         counter += 1
@@ -77,3 +81,32 @@ class ChopeBrowser:
 
     def quit(self):
         self.chrome.quit()
+
+
+def try_login(usr, pwd):
+    """ TODO:
+    given user password lw coba dia bisa login ga ke server
+    kalo bisa return true
+    kalo gabisa return false
+    """
+
+    """
+        btw codingan lw rapih kok wkkwkw gw cukup impressed
+        kek bahkan codingan lw gaada trailing spaces
+        kudos for you Dan!
+        but pake spasi ya jgn pake tabs kwkwkkw but overall codingannya bagus
+        and variable lw jga ga berantakan casenya itu nice
+        mengurangi kerja gua KWKWKWK
+        gw bahkan gapake linter gabisa kerja rapih
+        dan lw  melakukan itu tanpa linter
+        itu keren sih
+        dan gaada satupun W-unused wkkww nice...
+    """
+
+    # kalo lw gangerti maksud class diatas apaan
+    # ini caara untuk bikin browsernya
+    # coba mainin deh
+    instances = ChopeBrowser()
+    url = 'http://google.com'
+    instances.chrome.visit(url)
+    return True

@@ -82,13 +82,12 @@ class ChopeDB:
             pass
 
     def delete(self, table, condition, values):
+        # TODO: benerin docstring benda ini  jerrell ngantuk ini jam 5:20
         """
-        Delete row from table with a particular telegram ID
-        table: string
-        data: list of tuples (colname, data type, value)
-        colname: name of column whose values are used as the condition
-        data type: s,d,f, etc.
-        value: value of colname whose rows are to be deleted
+            table ya tablename
+            condition dibikin sendiri like
+            'kolomapa = %d OR (kolomlain = %s AND yang lain = %f)'
+            values ya list of barang lah buat isi persen"nya
         """
 
         v = VPrinter(True)
@@ -207,3 +206,23 @@ class ChopeDB:
             finally:
                 pass
         return targetVariables
+
+
+def get_credential(tgUsername, chatID):
+    # return tuple username, password
+    # btw inget enkripsi ya, btw cari aja lib apapun
+    # yng buat enkripsi dekripsi jadinya lw return gua decrypted
+    # TODO: fill this whole function
+    # XXX: delete this huge junk of comments
+    pass
+
+
+def store_credential(tgUsername, chatID, username, password):
+    # jadinya lw bikin fungsi yang nge store username, password
+    # lw encrypt passwordnya pake chatID soalnya itu unique untuk kita
+    # kek kebalikannya get_credential
+    # yang satunya store
+    # yang satunya narik
+    # TODO: fill this whole function
+    # XXX: delete this huge junk of comments
+    pass

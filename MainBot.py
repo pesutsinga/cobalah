@@ -1,6 +1,10 @@
+"""
+    YA GW TAU INI BELOM JADI
+    maafkan segala dosaku kawan" ...
+"""
 from TGBot import TGBot
 from telegram.ext import Filters
-from chopeDB import ChopeDB
+import chopeDB
 from chopeBrowser import chopeBrowser
 mainBot = None
 
@@ -37,8 +41,16 @@ def username_check(bot, update):
     return True
 
 
+def ask_username(bot, update):
+    pass
+
 def login_check(bot, update):
-    chopeDB
+    username = update.message.from_user.username
+    chatID = update.message.chat_id
+
+    cred = chopeDB.get_credential(username=username, chatID=chatID)
+    if not chopeBrowser.try_login(cred.username, cred.username):
+        ask_username()
 
 
 def start_cmd(bot, update):
