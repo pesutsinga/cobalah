@@ -107,6 +107,7 @@ def prio_cmd(bot, update):
         text="here is the list of your prio")
 
     listPrio = utilDB.get_prio(update.message.from_user.username)
+    print(listPrio)
 
     msg = ""
     for key, val in listPrio.items():
@@ -116,7 +117,7 @@ def prio_cmd(bot, update):
         [
             InlineKeyboardButton(
                 "Change prio",
-                callback_data=[change_prio, ]),
+                callback_data='change prio'),
 
             InlineKeyboardButton(
                 "Accept prio",
@@ -142,6 +143,7 @@ def order_cmd(bot, update):
 
 
 def convo_handler(bot, update):
+    print(update)
     global mainBot
     func = mainBot.phase(update)
     if (func is not None):
@@ -156,7 +158,7 @@ def convo_handler(bot, update):
             text="Baru on jam" + mainBot.firstOnline)
 
 
-def callback(bot, update):
+def callback_handler(bot, update):
     print(update.callback_query.data)
 
 
@@ -167,7 +169,7 @@ def main():
     mainBot.handle_cmd('start', start_cmd)
     mainBot.handle_cmd('prio', prio_cmd)
     mainBot.handle_cmd('help', help_cmd)
-    mainBot.handle_callback(callback)
+    mainBot.handle_callback(callback_handler)
     mainBot.handle_msg(Filters.command, unknown_cmd)
     mainBot.deploy()
 
