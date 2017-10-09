@@ -1,7 +1,3 @@
-import logging
-import telegram
-
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler
 from telegram.ext import CommandHandler, MessageHandler
 from telegram.ext import Updater
@@ -38,13 +34,9 @@ class ChopeBot:
         bot.send_message(
             chat_id=update.message.chat_id,
             text=question)
-        self.userPhase[update.message.chat_id] = func
+        self.set_phase(update, func)
 
     def phase(self, update):
-        print("PHASEE")
-        print("getting phase")
-        print(self.userPhase)
-        print(self.userPhase.get(update.message.chat_id))
         return self.userPhase.get(update.message.chat_id)
 
     def set_phase(self, update, func):
