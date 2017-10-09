@@ -2,10 +2,11 @@
     YA GW TAU INI BELOM JADI
     maafkan segala dosaku kawan" ...
 """
-from utilBot import ChopeBot
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters
-import utilDB
+from utilBot import ChopeBot
 import utilBrowser
+import utilDB
 mainBot = None
 
 
@@ -111,19 +112,33 @@ def prio_cmd(bot, update):
     for key, val in listPrio.items():
         msg += str(key) + ": " + str(val) + "\n"
 
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "Change prio",
+                callback_data=[change_prio, ]),
+
+            InlineKeyboardButton(
+                "Accept prio",
+                callback_data='2')
+        ],
+        [
+            InlineKeyboardButton(
+                "What does the number mean",
+                callback_data='3')
+        ]
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     bot.send_message(
         chat_id=update.message.chat_id,
-        text=msg)
+        text=msg,
+        reply_markup=reply_markup)
 
-    # keyboard = [
-    #     [InlineKeyboardButton("Option 1", callback_data='1'),
-    #     InlineKeyboardButton("Option 2", callback_data='2')],
 
-    #         [InlineKeyboardButton("Option 3", callback_data='3')]]
-
-    # reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # update.message.reply_text('Please choose:', reply_markup=reply_markup)
+def order_cmd(bot, update):
+    pass
 
 
 def convo_handler(bot, update):
@@ -141,6 +156,10 @@ def convo_handler(bot, update):
             text="Baru on jam" + mainBot.firstOnline)
 
 
+def callback(bot, update):
+    print(update.callback_query.data)
+
+
 def main():
     global mainBot
     mainBot = ChopeBot('377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g')
@@ -148,6 +167,7 @@ def main():
     mainBot.handle_cmd('start', start_cmd)
     mainBot.handle_cmd('prio', prio_cmd)
     mainBot.handle_cmd('help', help_cmd)
+    mainBot.handle_callback(callback)
     mainBot.handle_msg(Filters.command, unknown_cmd)
     mainBot.deploy()
 
