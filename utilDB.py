@@ -1,5 +1,6 @@
 import pymysql
 from util import VPrinter
+from Crypto.Cipher import AES
 
 
 class ChopeDB:
@@ -22,7 +23,8 @@ class ChopeDB:
             db=database,
             charset='utf8mb4')
         """
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor)
+
             bagian ini tak buang karena kalo pake
             cursorclass ini, ngaruh ke hasil query sql
             select
@@ -207,32 +209,144 @@ class ChopeDB:
                 pass
         return targetVariables
 
+    def select_dict(self, tgUsername):
+        """
+        p.s.
+        w bikin connection lagi disini biar bs pake dictionary cursor
+        khusus bwt fungsi ini doang
+        """
+
+        self.connection = pymysql.connect(
+            host='bebong.id',
+            user='u7728567_chope',
+            password='bunuakumz578%&*',
+            db='u7728567_chopebot',
+            charset='utf8mb4',
+            cursorclass=pymysql.cursors.DictCursor)
+
+        sql = "SELECT CIRCULAR_PODS, LEARNING_PODS, COLLAB_BOOTHS,\
+               LEARNING_ROOM, RECORDING_ROOM FROM LIBCHOP WHERE TELEGRAMID = %s"
+
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(sql, tgUsername)
+            results = cursor.fetchall()
+        except:
+            print("Query failed")
+
+        return results[0]
+
+    # return dict of name and prio
+    # return {'batman': 'nannanananan', 'batmaaan': 'nanananannana'}
+
 
 def set_username(tgUsername, username):
-    print("setting username")
-    # bikin fungsi store username given tg username
-    pass
+    # Function to store NTU username, given the telegram username
+    db = ChopeDB()
+
+    targetVariables = SelectList = []
+
+    SelectList.append(("TELEGRAMID", "%s", tgUsername, "USERNAME"))
+
+    targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
+    print(targetVariables)
+
+    if targetVariables == []:
+        InsertList = []
+        InsertList.append(("TELEGRAMID", '%s', tgUsername))
+        InsertList.append(("USERNAME", '%s', username))
+
+        db.insert("LIBCHOP", InsertList)
+    else:
+        UpdateList = []
+        UpdateList.append(("USERNAME", '%s', username,
+                           "TELEGRAMID", '%s', tgUsername))
+        db.update("LIBCHOP", UpdateList)
+    db.close()
 
 
 def set_password(tgUsername, password, chatID):
-    print("setting password")
-    # given tgUsername, password, chatID
-    # encrypt dlu ya
-    pass
+    db = ChopeDB()
+    # pad the key until it is 16 characters long
+    encryptKey = chatID
+    while len(encryptKey) < 16:
+        encryptKey = encryptKey + "]"
+    obj = AES.new(encryptKey, AES.MODE_CFB, 'This is an IV456')
+    encryptedPass = obj.encrypt(password)
+
+    InsertList = []
+    InsertList.append(("TELEGRAMID", '%s', tgUsername))
+    InsertList.append(("PASSWORD", '%s', encryptedPass))
+
+    db.insert("LIBCHOP", InsertList)
+    db.close()
 
 
 def get_username(tgUsername):
-    # return username orangnya given tgusername
-    # return "" if inexistent
-    pass
+    db = ChopeDB()
+
+    targetVariables = []
+    SelectList = [("TELEGRAMID", "%s", tgUsername, "USERNAME")]
+    targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
+
+    if targetVariables == []:
+        # print("Username : ''")
+        Username = ""
+    else:
+        # print("Username : ", targetVariables[0])
+        Username = targetVariables[0]
+
+    return Username
+
+    db.close()
 
 
 def get_password(tgUsername, chatID):
+    db = ChopeDB()
+
+    encryptKey = chatID
+    while len(encryptKey) < 16:
+        encryptKey = encryptKey + "]"
+
+    targetVariables = []
+    SelectList = [("TELEGRAMID", "%s", tgUsername, "PASSWORD")]
+    targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
+
+    if targetVariables == []:
+        strPassword = ""
+    else:
+        encryptedPass = targetVariables[0]
+
+    # Decrypt the encrypted password
+    obj2 = AES.new(encryptKey, AES.MODE_CFB, 'This is an IV456')
+    Password = obj2.decrypt(encryptedPass)
+    strPassword = str(Password)
+    strPassword = strPassword.strip("b'")
+    print(strPassword)
+    return strPassword
+
+    db.close()
     # return password given tgUsername dan di decrypt pake chatID
     # return "" if inexistent
     pass
 
 
 def get_prio(tgUsername):
-    # return dict of name and prio
-    return {'batman': 'nannanananan', 'batmaaan': 'nanananannana'}
+    db = ChopeDB()
+
+    Priority = db.select_dict(tgUsername)
+    print(Priority)
+
+    db.close()
+
+
+def set_prio(tgUsername, colName, value):
+    pass
+
+
+"""
+main for testing purposes
+def main():
+    get_password("alalalalalalla","123124565")
+main()
+"""

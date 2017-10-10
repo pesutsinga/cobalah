@@ -117,16 +117,16 @@ def prio_cmd(bot, update):
         [
             InlineKeyboardButton(
                 "Change prio",
-                callback_data='change prio'),
+                callback_data='callback_prio_set|change prio'),
 
             InlineKeyboardButton(
                 "Accept prio",
-                callback_data='2')
+                callback_data='callback_prio_set|accept prio')
         ],
         [
             InlineKeyboardButton(
                 "What does the number mean",
-                callback_data='3')
+                callback_data='callback_prio_set|help prio')
         ]
     ]
 
@@ -159,7 +159,50 @@ def convo_handler(bot, update):
 
 
 def callback_handler(bot, update):
-    print(update.callback_query.data)
+    callback_x = update.callback_query.data
+    dats = callback_x.split('|', 1)
+    if (dats[0] == 'callback_prio_set'):
+        callback_prio_set(bot, update, dats[1])
+    elif (dats[0] == 'settings'):
+        username = update.message.from_user.username
+        x = dats[1].split('||', 1)
+        utilDB.set_prio(username, x[0], x[1])
+
+
+def callback_prio_set(bot, update, tugas):
+    print(tugas, 'aaaaa')
+    if (tugas == 'change prio'):
+        print('aaaa')
+        change_prio(bot, update)
+    elif (tugas == 'accept prio'):
+        bot.send_message(
+            chat_id=update.message.chat_id,
+            text='hai'
+            )
+        print('aku anak indonesia jing')
+    elif (tugas == 'help prio'):
+        print('gw keren kok')
+
+
+def change_prio(bot, update):
+    bleh = [
+        "Circular Pods", "Learning Pods",
+        "Collab Booth", "Learning Room", "Recording Room"]
+    for j in bleh:
+        keyboard = []
+        print(keyboard)
+        for i in range(1, 6):
+            keyboard.append(
+                InlineKeyboardButton(
+                    str(i),
+                    callback_data="settings|"+j + "||" + str(i)))
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        msg = j
+        print(j)
+    bot.send_message(
+            chat_id=update.message.chat_id,
+            text=msg,
+            reply_markup=reply_markup)
 
 
 def main():

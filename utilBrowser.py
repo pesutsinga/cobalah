@@ -8,7 +8,6 @@ class ChopeBrowser:
     def login(self, usr, pwd, domain='STUDENT'):
         url = 'https://ntupcb.ntu.edu.sg'
         url += '/fbscbs/Account/SignIn?ReturnUrl=%2ffbscbs'
-
         self.chrome.visit(url)
         dropdown = self.chrome.find_by_tag('option')
 
@@ -52,8 +51,8 @@ class ChopeBrowser:
                 if event.text == '':
                     continue
                 eventText = event.text
-                if not eventText.find('—') == -1:
-                    evToday.append(eventText.split('—'))
+                if not eventText.find("—") == -1:
+                    evToday.append(eventText.split("—"))
             evWeek.append(evToday)
         evFacilities.append(evWeek)
         counter += 1
@@ -101,12 +100,22 @@ def try_login(usr, pwd):
         dan lw  melakukan itu tanpa linter
         itu keren sih
         dan gaada satupun W-unused wkkww nice...
-    """
-
-    # kalo lw gangerti maksud class diatas apaan
+    # """
+#
     # ini caara untuk bikin browsernya
     # coba mainin deh
-    instances = ChopeBrowser()
+    instances = ChopeBrowser().chrome
     url = 'http://google.com'
-    instances.chrome.visit(url)
-    return True
+    instances.visit(url)
+    instances.quit()
+    return input("can he login? placeholder: ") == "True"
+
+
+def main():
+    bro = ChopeBrowser()
+    sol = bro.scrape_seats('JERRELL001', 'enamsatulapan618^!*')
+    print(sol)
+
+
+if __name__ == '__main__':
+    main()
