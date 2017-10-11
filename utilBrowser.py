@@ -50,6 +50,7 @@ class ChopeBrowser:
                     continue
                 if event.text == '':
                     continue
+                print(event.text)
                 eventText = event.text
                 if not eventText.find("—") == -1:
                     evToday.append(eventText.split("—"))
@@ -83,32 +84,15 @@ class ChopeBrowser:
 
 
 def try_login(usr, pwd):
-    """ TODO:
-    given user password lw coba dia bisa login ga ke server
-    kalo bisa return true
-    kalo gabisa return false
-    """
-
-    """
-        btw codingan lw rapih kok wkkwkw gw cukup impressed
-        kek bahkan codingan lw gaada trailing spaces
-        kudos for you Dan!
-        but pake spasi ya jgn pake tabs kwkwkkw but overall codingannya bagus
-        and variable lw jga ga berantakan casenya itu nice
-        mengurangi kerja gua KWKWKWK
-        gw bahkan gapake linter gabisa kerja rapih
-        dan lw  melakukan itu tanpa linter
-        itu keren sih
-        dan gaada satupun W-unused wkkww nice...
-    # """
-#
-    # ini caara untuk bikin browsernya
-    # coba mainin deh
-    instances = ChopeBrowser().chrome
-    url = 'http://google.com'
-    instances.visit(url)
+    instances = ChopeBrowser()
+    url = 'https://ntupcb.ntu.edu.sg'
+    url += '/fbscbs/Account/SignIn?ReturnUrl=%2ffbscbs'
+    instances.chrome.visit(url)
+    instances.chrome.fill('Username', usr)
+    instances.chrome.fill('Password', pwd + '\n')
+    loginCheck = instances.chrome.find_by_id('login')
     instances.quit()
-    return input("can he login? placeholder: ") == "True"
+    return loginCheck == []
 
 
 def main():
