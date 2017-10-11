@@ -5,6 +5,9 @@ class ChopeBrowser:
     def __init__(self, headless=False):
         self.chrome = Browser('chrome', headless=headless)
 
+    def time_delay(self, time):
+        self.chrome.is_element_present_by_name('!@#$%^&*())(*&^%$#@!', wait_time=time)
+
     def login(self, usr, pwd, domain='STUDENT'):
         url = 'https://ntupcb.ntu.edu.sg'
         url += '/fbscbs/Account/SignIn?ReturnUrl=%2ffbscbs'
@@ -36,28 +39,22 @@ class ChopeBrowser:
             return False
         return True
 
-    def check_facility(self, counter, evFacilities):
+    def check_facility(self, evFacilities):
         columnWeek = self.chrome.find_by_css('.wc-event-column')
         evWeek = []
         for columnDay in columnWeek:
             evToday = []
             evList = columnDay.find_by_css('.ui-corner-all')
             for event in evList:
-                # biar gatebel gw bongkar ya dan
-                if event.has_class('noShowWhite'):
-                    continue
-                if event.has_class('currentEvent'):
-                    continue
-                if event.text == '':
-                    continue
-                print(event.text)
-                eventText = event.text
-                if not eventText.find("—") == -1:
-                    evToday.append(eventText.split("—"))
+                if not event.has_class('noShowWhite'):
+                    if not event.has_class('currentEvent'):
+                        event = event.text
+                        if not event.find('—') == -1:
+                            if event == '':
+                                continue
+                            evToday.append(event.split('—'))
             evWeek.append(evToday)
         evFacilities.append(evWeek)
-        counter += 1
-        self.click_next(counter, evFacilities)
 
     def click_next(self, counter, evFacilities):
         # Kerja rekursif dengan check_facility.
@@ -74,9 +71,17 @@ class ChopeBrowser:
     def scrape_seats(self, usr, pwd):
         self.login(usr, pwd)
         self.first_setup()
-        counter = 0
         evFacilities = []
-        self.check_facility(counter, evFacilities)
+        dropdown = self.chrome.find_by_id('ResourceId')
+        options = dropdown.find_by_tag('option')
+        for opt in options:
+            nextOption = opt
+            nextOption.click()
+            self.time_delay(0.2)
+            # while loadingTitle.visible:
+            #     pass
+            evFacilities.append(opt.text)
+            self.check_facility(evFacilities)
         return evFacilities
 
     def quit(self):
@@ -97,7 +102,9 @@ def try_login(usr, pwd):
 
 def main():
     bro = ChopeBrowser()
-    sol = bro.scrape_seats('JERRELL001', 'enamsatulapan618^!*')
+    usr = input("usr")
+    pwd = input("pwd")
+    sol = bro.scrape_seats(usr, pwd)
     print(sol)
 
 
