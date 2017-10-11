@@ -10,6 +10,7 @@ class ChopeBot:
         self.updater = Updater(token=token)
         self.dispatcher = self.updater.dispatcher
         self.userPhase = {}
+        self.prioMessageID = {}
 
     def deploy(self):
         self.updater.start_polling()
@@ -41,3 +42,6 @@ class ChopeBot:
 
     def set_phase(self, update, func):
         self.userPhase[update.message.chat_id] = func
+
+    def set_prio_message_id(self, chatID, messageID):
+        self.prioMessageID[chatID] = messageID

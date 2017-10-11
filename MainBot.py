@@ -71,8 +71,9 @@ def login_check(bot, update):
     username = update.message.from_user.username
     chatID = update.message.chat_id
     usr = utilDB.get_username(username)
+    print('lalala')
     pwd = utilDB.get_password(username, chatID)
-
+    print('lololo')
     print(chatID)
     print(usr)
     print(pwd)
@@ -107,18 +108,18 @@ def start_cmd(bot, update):
     prio_cmd(bot, update)
 
 
-def prio_cmd(bot, update):
-    bot.send_message(
-        chat_id=update.message.chat_id,
-        text="here is the list of your prio")
-
-    listPrio = utilDB.get_prio(update.message.from_user.username)
+def prio_text(tgUsername):
+    listPrio = utilDB.get_prio(tgUsername)
+    listPrio = [(k, v) for k, v in listPrio.items()]
+    listPrio.sort()
+    print(listPrio)
     msg = ""
-    for key, val in listPrio.items():
-        msg += str(key) + ": " + str(val) + "\n"
+    for key, val in listPrio:
+        msg += str(key).replace('_', ' ').title() + ": " + str(val) + "\n"
+    return msg
 
-    print("skldf")
-    print(msg)
+
+def prio_markup():
     keyboard = [
         [
             InlineKeyboardButton(
@@ -136,12 +137,24 @@ def prio_cmd(bot, update):
         ]
     ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(keyboard)
 
+
+def prio_cmd(bot, update):
+    global mainBot
     bot.send_message(
         chat_id=update.message.chat_id,
+        text="here is the list of your prio")
+
+    msg = prio_text(update.message.from_user.username)
+
+    prio_msg = bot.send_message(
+        chat_id=update.message.chat_id,
         text=msg,
-        reply_markup=reply_markup)
+        reply_markup=prio_markup())
+
+    mainBot.set_prio_message_id(update.message.chat_id, prio_msg.message_id)
+    print(prio_msg.message_id)
 
 
 def order_cmd(bot, update):
@@ -149,7 +162,6 @@ def order_cmd(bot, update):
 
 
 def convo_handler(bot, update):
-    print(update)
     global mainBot
     func = mainBot.phase(update)
     if (func is not None):
@@ -165,42 +177,46 @@ def convo_handler(bot, update):
 
 
 def callback_handler(bot, update):
-    callback_x = update.callback_query.data
-    dats = callback_x.split('|', 1)
+    global mainBot
+    callbackData = update.callback_query.data
+    print(callbackData)
+    dats = callbackData.split('|', 1)
     if (dats[0] == 'callback_prio_set'):
         callback_prio_set(bot, update, dats[1])
     elif (dats[0] == 'settings'):
-        username = update.message.from_user.username
+        username = update.callback_query.from_user.username
         x = dats[1].split('||', 1)
-        utilDB.set_prio(username, x[0], x[1])
+        colName = x[0].upper().replace(' ', '_')
+        utilDB.set_prio(username, colName, x[1])
+        chatID = update.callback_query.message.chat_id
+        bot.edit_message_text(
+            chat_id=chatID,
+            message_id=mainBot.prioMessageID[chatID],
+            text=prio_text(username),
+            reply_markup=prio_markup())
 
 
-def callback_prio_set(bot, update, tugas):
-    print(tugas, 'aaaaa')
-    if (tugas == 'change prio'):
-        print('aaaa')
+def callback_prio_set(bot, update, task):
+    chatID = update.callback_query.message.chat_id
+    if (task == 'change prio'):
         change_prio(bot, update)
-    elif (tugas == 'accept prio'):
+    elif (task == 'accept prio'):
         bot.send_message(
-            chat_id=update.message.chat_id,
-            text='hai'
-            )
-        print('aku anak indonesia jing')
-    elif (tugas == 'help prio'):
-        print('gw keren kok')
+            chat_id=chatID,
+            text='hai')
+    elif (task == 'help prio'):
+        bot.send_message(
+            chat_id=chatID,
+            text='dasar kaw anak ikan gini aja gangerti :v')
 
 
 def change_prio(bot, update):
     chatID = update.callback_query.message.chat_id
 
-    bot.send_message(
-        chat_id=chatID,
-        text="ksdfldkf")
-
     seats = [
         "Circular Pods",
+        "Collab Booths",
         "Learning Pods",
-        "Collab Booth",
         "Learning Room",
         "Recording Room"]
 
@@ -208,7 +224,7 @@ def change_prio(bot, update):
         keyboard = []
         for i in range(6):
             button = InlineKeyboardButton(
-                    str(i),
+                    "__" + str(i) + "__",
                     callback_data="settings|" + seat + "||" + str(i))
             keyboard.append(button)
         reply_markup = InlineKeyboardMarkup([keyboard])
@@ -223,6 +239,7 @@ def main():
     mainBot = ChopeBot('377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g')
     mainBot.handle_msg(Filters.text, convo_handler)
     mainBot.handle_cmd('start', start_cmd)
+    mainBot.handle_cmd('changeusername', ask_username)
     mainBot.handle_cmd('prio', prio_cmd)
     mainBot.handle_cmd('help', help_cmd)
     mainBot.handle_callback(callback_handler)
