@@ -58,20 +58,26 @@ def ask_password(bot, update):
 
 def ans_password(bot, update):
     global mainBot
+    print('huehuehue')
     utilDB.set_password(
         tgUsername=update.message.from_user.username,
         password=update.message.text,
         chatID=update.message.chat_id)
+    print('slds')
     start_cmd(bot, update)
 
 
 def login_check(bot, update):
     username = update.message.from_user.username
     chatID = update.message.chat_id
-
     usr = utilDB.get_username(username)
     pwd = utilDB.get_password(username, chatID)
+
+    print(chatID)
+    print(usr)
+    print(pwd)
     canLogin = utilBrowser.try_login(usr, pwd)
+    print(canLogin)
     return canLogin
 
 
@@ -107,12 +113,12 @@ def prio_cmd(bot, update):
         text="here is the list of your prio")
 
     listPrio = utilDB.get_prio(update.message.from_user.username)
-    print(listPrio)
-
     msg = ""
     for key, val in listPrio.items():
         msg += str(key) + ": " + str(val) + "\n"
 
+    print("skldf")
+    print(msg)
     keyboard = [
         [
             InlineKeyboardButton(
@@ -185,23 +191,30 @@ def callback_prio_set(bot, update, tugas):
 
 
 def change_prio(bot, update):
-    bleh = [
-        "Circular Pods", "Learning Pods",
-        "Collab Booth", "Learning Room", "Recording Room"]
-    for j in bleh:
-        keyboard = []
-        print(keyboard)
-        for i in range(1, 6):
-            keyboard.append(
-                InlineKeyboardButton(
-                    str(i),
-                    callback_data="settings|"+j + "||" + str(i)))
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        msg = j
-        print(j)
+    chatID = update.callback_query.message.chat_id
+
     bot.send_message(
-            chat_id=update.message.chat_id,
-            text=msg,
+        chat_id=chatID,
+        text="ksdfldkf")
+
+    seats = [
+        "Circular Pods",
+        "Learning Pods",
+        "Collab Booth",
+        "Learning Room",
+        "Recording Room"]
+
+    for seat in seats:
+        keyboard = []
+        for i in range(6):
+            button = InlineKeyboardButton(
+                    str(i),
+                    callback_data="settings|" + seat + "||" + str(i))
+            keyboard.append(button)
+        reply_markup = InlineKeyboardMarkup([keyboard])
+        bot.send_message(
+            chat_id=chatID,
+            text=seat + " :",
             reply_markup=reply_markup)
 
 

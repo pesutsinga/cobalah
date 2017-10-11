@@ -224,8 +224,7 @@ class ChopeDB:
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor)
 
-        sql = "SELECT CIRCULAR_PODS, LEARNING_PODS, COLLAB_BOOTHS,\
-               LEARNING_ROOM, RECORDING_ROOM FROM LIBCHOP WHERE TELEGRAMID = %s"
+        sql = "SELECT CIRCULAR_PODS, LEARNING_PODS, COLLAB_BOOTHS, LEARNING_ROOM, RECORDING_ROOM FROM LIBCHOP WHERE TELEGRAMID = %s"
 
         try:
             with self.connection.cursor() as cursor:
@@ -268,7 +267,7 @@ def set_username(tgUsername, username):
 def set_password(tgUsername, password, chatID):
     db = ChopeDB()
     # pad the key until it is 16 characters long
-    encryptKey = chatID
+    encryptKey = str(chatID)
     while len(encryptKey) < 16:
         encryptKey = encryptKey + "]"
     obj = AES.new(encryptKey, AES.MODE_CFB, 'This is an IV456')
@@ -289,33 +288,39 @@ def get_username(tgUsername):
     SelectList = [("TELEGRAMID", "%s", tgUsername, "USERNAME")]
     targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
 
+    print('lalala')
     if targetVariables == []:
         # print("Username : ''")
         Username = ""
     else:
         # print("Username : ", targetVariables[0])
-        Username = targetVariables[0]
+        Username = str(targetVariables[0])
 
-    return Username
-
+    print(Username)
     db.close()
+    return Username
 
 
 def get_password(tgUsername, chatID):
     db = ChopeDB()
-
-    encryptKey = chatID
+    print('shuahua')
+    encryptKey = str(chatID)
+    print(encryptKey)
     while len(encryptKey) < 16:
         encryptKey = encryptKey + "]"
 
+    print('sfkldsf')
     targetVariables = []
+    print('slfei')
     SelectList = [("TELEGRAMID", "%s", tgUsername, "PASSWORD")]
+    print('sklfel')
     targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
 
+    print(targetVariables)
     if targetVariables == []:
-        strPassword = ""
+        encryptedPass = ""
     else:
-        encryptedPass = targetVariables[0]
+        encryptedPass = str(targetVariables[0])
 
     # Decrypt the encrypted password
     obj2 = AES.new(encryptKey, AES.MODE_CFB, 'This is an IV456')
@@ -323,21 +328,17 @@ def get_password(tgUsername, chatID):
     strPassword = str(Password)
     strPassword = strPassword.strip("b'")
     print(strPassword)
-    return strPassword
-
     db.close()
-    # return password given tgUsername dan di decrypt pake chatID
-    # return "" if inexistent
-    pass
+    print('lololo')
+    return strPassword
 
 
 def get_prio(tgUsername):
     db = ChopeDB()
 
     Priority = db.select_dict(tgUsername)
-    print(Priority)
-
     db.close()
+    return Priority
 
 
 def set_prio(tgUsername, colName, value):
