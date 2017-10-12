@@ -2,11 +2,17 @@
     YA GW TAU INI BELOM JADI
     maafkan segala dosaku kawan" ...
 """
+from telegram.ext.dispatcher import run_async
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters
 from utilBot import ChopeBot
 import utilBrowser
 import utilDB
+import pprint
+import string
+import random
+from io import BytesIO
+from captcha.image import ImageCaptcha
 mainBot = None
 
 
@@ -17,6 +23,7 @@ def parrot(bot, update):
         text=update.message.text)
 
 
+@run_async
 def unknown_cmd(bot, update):
     bot.send_message(
         chat_id=update.message.chat_id,
@@ -24,6 +31,7 @@ def unknown_cmd(bot, update):
     help_cmd(bot, update)
 
 
+@run_async
 def help_cmd(bot, update):
     bot.send_message(
         chat_id=update.message.chat_id,
@@ -31,6 +39,7 @@ def help_cmd(bot, update):
     pass
 
 
+@run_async
 def tgusername_check(bot, update):
     username = update.message.from_user.username
     if username is not None:
@@ -38,11 +47,13 @@ def tgusername_check(bot, update):
     return False
 
 
+@run_async
 def ask_username(bot, update):
     global mainBot
     mainBot.ask(bot, update, "username apaan ?", ans_username)
 
 
+@run_async
 def ans_username(bot, update):
     global mainBot
     utilDB.set_username(
@@ -51,11 +62,13 @@ def ans_username(bot, update):
     ask_password(bot, update)
 
 
+@run_async
 def ask_password(bot, update):
     global mainBot
     mainBot.ask(bot, update, "password apaan ?", ans_password)
 
 
+@run_async
 def ans_password(bot, update):
     global mainBot
     print('huehuehue')
@@ -67,13 +80,12 @@ def ans_password(bot, update):
     start_cmd(bot, update)
 
 
+@run_async
 def login_check(bot, update):
     username = update.message.from_user.username
     chatID = update.message.chat_id
     usr = utilDB.get_username(username)
-    print('lalala')
     pwd = utilDB.get_password(username, chatID)
-    print('lololo')
     print(chatID)
     print(usr)
     print(pwd)
@@ -82,6 +94,7 @@ def login_check(bot, update):
     return canLogin
 
 
+@run_async
 def start_cmd(bot, update):
     bot.send_message(
         chat_id=update.message.chat_id,
@@ -108,6 +121,7 @@ def start_cmd(bot, update):
     prio_cmd(bot, update)
 
 
+@run_async
 def prio_text(tgUsername):
     listPrio = utilDB.get_prio(tgUsername)
     listPrio = [(k, v) for k, v in listPrio.items()]
@@ -119,6 +133,7 @@ def prio_text(tgUsername):
     return msg
 
 
+@run_async
 def prio_markup():
     keyboard = [
         [
@@ -140,6 +155,7 @@ def prio_markup():
     return InlineKeyboardMarkup(keyboard)
 
 
+@run_async
 def prio_cmd(bot, update):
     global mainBot
     bot.send_message(
@@ -157,10 +173,12 @@ def prio_cmd(bot, update):
     print(prio_msg.message_id)
 
 
+@run_async
 def order_cmd(bot, update):
     pass
 
 
+@run_async
 def convo_handler(bot, update):
     global mainBot
     func = mainBot.phase(update)
@@ -176,18 +194,21 @@ def convo_handler(bot, update):
             text="Baru on jam" + mainBot.firstOnline)
 
 
+@run_async
 def callback_handler(bot, update):
     global mainBot
     callbackData = update.callback_query.data
     print(callbackData)
-    dats = callbackData.split('|', 1)
-    if (dats[0] == 'callback_prio_set'):
-        callback_prio_set(bot, update, dats[1])
-    elif (dats[0] == 'settings'):
+    data = callbackData.split('|', 1)
+    if (data[0] == 'callback_prio_set'):
+        callback_prio_set(bot, update, data[1])
+    elif (data[0] == 'settings'):
         username = update.callback_query.from_user.username
-        x = dats[1].split('||', 1)
-        colName = x[0].upper().replace(' ', '_')
-        utilDB.set_prio(username, colName, x[1])
+        changes = data[1].split('||', 1)
+        colName = changes[0].upper().replace(' ', '_')
+        value = changes[1]
+        utilDB.set_prio(username, colName, value)
+
         chatID = update.callback_query.message.chat_id
         bot.edit_message_text(
             chat_id=chatID,
@@ -195,7 +216,70 @@ def callback_handler(bot, update):
             text=prio_text(username),
             reply_markup=prio_markup())
 
+        seatName = update.callback_query.message.text.strip(": ")
+        keyboard = []
+        for i in range(6):
+            pad = "**" if str(i) == str(value) else "__"
+            button = InlineKeyboardButton(
+                    pad + str(i) + pad,
+                    callback_data="settings|" + seatName + "||" + str(i))
+            keyboard.append(button)
+        reply_markup = InlineKeyboardMarkup([keyboard])
 
+        bot.edit_message_text(
+            chat_id=chatID,
+            message_id=update.callback_query.message.message_id,
+            text=update.callback_query.message.text,
+            reply_markup=reply_markup)
+        print('asdfadsf')
+
+
+def find_seat(tgUsername, chatID):
+    usr = utilDB.get_username(tgUsername)
+    pwd = utilDB.get_password(tgUsername, chatID)
+    print(usr, pwd)
+    instances = utilBrowser.ChopeBrowser()
+    occupied = instances.scrape_seats(usr, pwd)
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(occupied)
+    return occupied
+
+
+@run_async
+def ask_captcha(bot, update, callback=False):
+    global mainBot
+    if callback:
+        chatID = update.callback_query.message.chat_id
+    else:
+        chatID = update.message.chat_id
+
+    if (not callback):
+        if mainBot.get_captcha_solution(chatID) == update.message.text:
+            bot.send_message(
+                chat_id=chatID,
+                text="please wait, be calm, this may take 3 min")
+            find_seat(update.message.from_user.username, chatID)
+            return
+
+    image = ImageCaptcha(
+        fonts=['fonts/Inconsolata-g.ttf', 'fonts/RobotoSlab-Regular.ttf'])
+    randStr = ''.join(random.choice(
+        string.ascii_lowercase + string.digits) for _ in range(6))
+    data = image.generate(randStr)
+    print('hehshe')
+    assert isinstance(data, BytesIO)
+    image.write(randStr, 'curCaptcha.png')
+    print('afeois')
+
+    mainBot.set_phase(chatID, ask_captcha)
+    print('sfle')
+    bot.send_photo(chat_id=chatID, photo=open('curCaptcha.png', 'rb'))
+    bot.send_message(chat_id=chatID, text="please write the captcha")
+    print("alsdkfa")
+    mainBot.set_captcha_solution(chatID, randStr)
+
+
+@run_async
 def callback_prio_set(bot, update, task):
     chatID = update.callback_query.message.chat_id
     if (task == 'change prio'):
@@ -204,12 +288,14 @@ def callback_prio_set(bot, update, task):
         bot.send_message(
             chat_id=chatID,
             text='hai')
+        ask_captcha(bot, update, True)
     elif (task == 'help prio'):
         bot.send_message(
             chat_id=chatID,
             text='dasar kaw anak ikan gini aja gangerti :v')
 
 
+@run_async
 def change_prio(bot, update):
     chatID = update.callback_query.message.chat_id
 
@@ -220,11 +306,15 @@ def change_prio(bot, update):
         "Learning Room",
         "Recording Room"]
 
+    prioList = utilDB.get_prio(update.callback_query.from_user.username)
     for seat in seats:
+        val = prioList[seat.upper().replace(' ', '_')]
+        print(val)
         keyboard = []
         for i in range(6):
+            pad = "**" if i == val else "__"
             button = InlineKeyboardButton(
-                    "__" + str(i) + "__",
+                    pad + str(i) + pad,
                     callback_data="settings|" + seat + "||" + str(i))
             keyboard.append(button)
         reply_markup = InlineKeyboardMarkup([keyboard])

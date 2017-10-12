@@ -11,6 +11,7 @@ class ChopeBot:
         self.dispatcher = self.updater.dispatcher
         self.userPhase = {}
         self.prioMessageID = {}
+        self.captchaSolution = {}
 
     def deploy(self):
         self.updater.start_polling()
@@ -35,13 +36,19 @@ class ChopeBot:
         bot.send_message(
             chat_id=update.message.chat_id,
             text=question)
-        self.set_phase(update, func)
+        self.set_phase(update.message.chat_id, func)
 
     def phase(self, update):
         return self.userPhase.get(update.message.chat_id)
 
-    def set_phase(self, update, func):
-        self.userPhase[update.message.chat_id] = func
+    def set_phase(self, chatID, func):
+        self.userPhase[chatID] = func
 
     def set_prio_message_id(self, chatID, messageID):
         self.prioMessageID[chatID] = messageID
+
+    def set_captcha_solution(self, chatID, solution):
+        self.captchaSolution[chatID] = solution
+
+    def get_captcha_solution(self, chatID):
+        return self.captchaSolution.get(chatID)

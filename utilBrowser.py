@@ -77,7 +77,7 @@ class ChopeBrowser:
         for opt in options:
             nextOption = opt
             nextOption.click()
-            self.time_delay(0.2)
+            self.time_delay(0.1)
             # while loadingTitle.visible:
             #     pass
             evFacilities.append(opt.text)
@@ -89,6 +89,7 @@ class ChopeBrowser:
 
 
 def try_login(usr, pwd):
+    return True    # TODO: REMOVE THIS DEBUG
     instances = ChopeBrowser()
     url = 'https://ntupcb.ntu.edu.sg'
     url += '/fbscbs/Account/SignIn?ReturnUrl=%2ffbscbs'
