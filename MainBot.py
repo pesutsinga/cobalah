@@ -53,7 +53,7 @@ def tgusername_check(bot, update):
 
 def ask_username(bot, update):
     global mainBot
-    mainBot.ask(bot, update, "username apaan ?", ans_username)
+    mainBot.ask(bot, update, "Your NTU Username ?", ans_username)
 
 
 def ans_username(bot, update):
@@ -66,7 +66,7 @@ def ans_username(bot, update):
 
 def ask_password(bot, update):
     global mainBot
-    mainBot.ask(bot, update, "password apaan ?", ans_password)
+    mainBot.ask(bot, update, "Your NTU Password ?", ans_password)
 
 
 def ans_password(bot, update):
@@ -90,7 +90,7 @@ def ask_start_chope(bot, update, callback=False):
     global mainBot
     bot.send_message(
         chat_id=chatID,
-        text="mulai jam berapa  HH:MM ?")
+        text="start time  HH:MM ?")
     mainBot.set_phase(chatID, ans_start_chope)
 
 
@@ -116,7 +116,7 @@ def ans_start_chope(bot, update):
 
 def ask_end_chope(bot, update):
     global mainBot
-    mainBot.ask(bot, update, "sampe  HH:MM ?", ans_end_chope)
+    mainBot.ask(bot, update, "until  HH:MM ?", ans_end_chope)
 
 
 def ans_end_chope(bot, update):
@@ -133,6 +133,8 @@ def ans_end_chope(bot, update):
 
         minute = ceil(minute / 30) * 30
         END_TIME[update.message.chat_id] = (hour, minute)
+        print(END_TIME[update.message.chat_id])
+        print(update.message.chat_id)
         ask_captcha(bot, update)
     except:
         ask_end_chope(bot, update)
@@ -227,7 +229,7 @@ def unknown_cmd(bot, update):
 def help_cmd(bot, update):
     bot.send_message(
         chat_id=update.message.chat_id,
-        text="some random ass command list")
+        text="just /start and /changeusername")
     pass
 
 
@@ -416,7 +418,9 @@ def print_seat(bot, update, occupied, k=0):
     st = mn // 30
     st += 2 * hr
     print('sdlfk')
-    strTime = END_TIME[update.message.chatID]
+
+    strTime = END_TIME[update.message.chat_id]
+    print(strTime)
     hr = int(strTime[0])
     mn = int(strTime[1])
     en = mn // 30
@@ -432,11 +436,14 @@ def print_seat(bot, update, occupied, k=0):
     lastTake = -1
     for i in range(st, en):
         curBest = nSeat + 1
+        print('sfkl')
         for j in range(nSeat):
             cumLen += 1
             if (bestSoln[j][i] > bestSoln[curBest][i]):
                 curBest = j
+            print('sdfkl')
         if lastTake != curBest:
+            print('seil')
             if lastTake == -1:
                 continue
 
