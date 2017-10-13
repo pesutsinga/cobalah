@@ -331,7 +331,7 @@ def callback_handler(bot, update):
             reply_markup=reply_markup)
 
 
-def print_seat(bot, update, occupied):
+def print_seat(bot, update, occupied, k=0):
     occupiedLength = len(occupied)
 
     typeName = [
@@ -344,12 +344,15 @@ def print_seat(bot, update, occupied):
     seatName = []
     seatType = []
     seatPrio = []
+    seatOcc = []
+    bestSoln = [[0] * 100] * 100
     for i in range(0, occupiedLength, 2):
         seatName.append(occupied[i])
 
     nSeat = len(seatName)
 
-    # Sorry hardcoded this is Friday 10 am
+    # Sorry hardcoded this is Friday 10 am (i don't have time)
+    # I havent done the print to user
     seatType.extend([0] * 2)
     seatType.extend([1] * 12)
     seatType.extend([0] * 1)
@@ -369,16 +372,84 @@ def print_seat(bot, update, occupied):
         parsed = typeName[seatType[i]].upper().replace(' ', '_')
         seatPrio.append(listPrio.get(parsed))
 
-    now = datetime.datetime.now()
+    print('lol')
+    now = datetime.now()
     today = now.weekday()
-    today = (now + 1) % 7
-
-    for i in range(nSeat):
-        print(seatName[i], typeName[seatType[i]], seatPrio[i])
-
+    today = (today + k) % 7
     for i in range(1, occupiedLength, 2):
-        for j in occupied[i][today]:
-            print(j)
+        seatOcc.append(occupied[i][today])
+
+    print('sdkfl')
+    # DP table initialisation
+    for i in range(nSeat):
+        print('auw')
+        for j in range(48):
+            bestSoln[i][j] = seatPrio[i]
+        for j in seatOcc[i]:
+            strTime = j[0]
+            strTime = strTime.strip(' ')
+            strTime = strTime.split(':')
+            hr = int(strTime[0])
+            mn = int(strTime[1])
+            st = mn // 30
+            st += 2 * hr
+
+            strTime = j[1]
+            strTime = strTime.strip(' ')
+            strTime = strTime.split(':')
+            hr = int(strTime[0])
+            mn = int(strTime[1])
+            en = mn // 30
+            en += 2 * hr
+            en -= 1
+            print(st, en)
+            for k in range(st, en):
+                bestSoln[i][k] = -1
+                pass
+
+    print('sdfkl')
+    # We want to maximise total "prio"
+    strTime = START_TIME[update.message.chat_id]
+    print(strTime)
+    hr = int(strTime[0])
+    mn = int(strTime[1])
+    st = mn // 30
+    st += 2 * hr
+    print('sdlfk')
+    strTime = END_TIME[update.message.chatID]
+    hr = int(strTime[0])
+    mn = int(strTime[1])
+    en = mn // 30
+    en += 2 * hr
+    en -= 1
+
+    print('sfiel')
+    seatName.append("seatless")
+
+    print('sdfl')
+    # OPTIMIZE: we could do DP in the future
+    cumLen = 0
+    lastTake = -1
+    for i in range(st, en):
+        curBest = nSeat + 1
+        for j in range(nSeat):
+            cumLen += 1
+            if (bestSoln[j][i] > bestSoln[curBest][i]):
+                curBest = j
+        if lastTake != curBest:
+            if lastTake == -1:
+                continue
+
+            bot.send_message(
+                chat_id=update.message.chatID,
+                text="take " + seatName[lastTake] + " for" + int(cumLen) + " blocks")
+
+            lastTake = curBest
+            cumLen = 0
+
+    bot.send_message(
+        chat_id=update.message.chatID,
+        text="take " + seatName[lastTake] + " for" + int(cumLen) + " blocks")
 
 
 def callback_prio_set(bot, update, task):
@@ -427,12 +498,11 @@ def reboot(bot, update):
     os.execl(sys.executable, sys.executable, *sys.argv)
 
 
-
 def main():
-    print('asfd')
+    print('Bot is prepared')
     global mainBot
-    # TOKEN = "406125095:AAEiPIwPMdD18XA39VtAplp5L7MdUm0cFEM"
-    TOKEN = "377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g"
+    TOKEN = "406125095:AAEiPIwPMdD18XA39VtAplp5L7MdUm0cFEM"
+    # TOKEN = "377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g"
     mainBot = ChopeBot(TOKEN)
     mainBot.handle_msg(Filters.text, convo_handler)
     mainBot.handle_cmd('start', start_cmd)
@@ -443,6 +513,7 @@ def main():
     mainBot.handle_callback(callback_handler)
     mainBot.handle_msg(Filters.command, unknown_cmd)
     mainBot.deploy()
+    print('Deployed')
 
 
 if __name__ == '__main__':
