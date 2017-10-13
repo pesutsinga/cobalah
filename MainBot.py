@@ -381,6 +381,8 @@ def print_seat(bot, update, occupied, k=0):
     for i in range(1, occupiedLength, 2):
         seatOcc.append(occupied[i][today])
 
+    print(seatPrio)
+
     print('sdkfl')
     # DP table initialisation
     for i in range(nSeat):
@@ -433,7 +435,13 @@ def print_seat(bot, update, occupied, k=0):
     print('sdfl')
     # OPTIMIZE: we could do DP in the future
     cumLen = 0
-    lastTake = -1
+    lastTake = nSeat + 1
+
+    for i in range(nSeat):
+        for j in range(st, en):
+            print(bestSoln[j][i], end=' ')
+        print()
+
     for i in range(st, en):
         curBest = nSeat + 1
         print('sfkl')
@@ -441,21 +449,21 @@ def print_seat(bot, update, occupied, k=0):
             cumLen += 1
             if (bestSoln[j][i] > bestSoln[curBest][i]):
                 curBest = j
-            print('sdfkl')
+
         if lastTake != curBest:
-            print('seil')
-            if lastTake == -1:
-                continue
+            print('483')
+            soln = "take " + seatName[lastTake] + " for" + int(cumLen) + " blocks"
+            print(soln)
 
             bot.send_message(
-                chat_id=update.message.chatID,
-                text="take " + seatName[lastTake] + " for" + int(cumLen) + " blocks")
+                chat_id=update.message.chat_id,
+                text=soln)
 
             lastTake = curBest
             cumLen = 0
 
     bot.send_message(
-        chat_id=update.message.chatID,
+        chat_id=update.message.chat_id,
         text="take " + seatName[lastTake] + " for" + int(cumLen) + " blocks")
 
 
