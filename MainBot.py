@@ -258,6 +258,11 @@ def prio_markup():
             InlineKeyboardButton(
                 "What does the number mean",
                 callback_data='callback_prio_set|help prio')
+        ],
+        [
+            InlineKeyboardButton(
+                "PC booking",
+                callback_data='callback_prio_set|PC')
         ]
     ]
 
@@ -331,6 +336,9 @@ def callback_handler(bot, update):
             message_id=update.callback_query.message.message_id,
             text=update.callback_query.message.text,
             reply_markup=reply_markup)
+    elif (data[0] == 'takepc'):
+        utilBrowser.ChopeBrowser().pc_setup(data[1])
+
 
 
 def print_seat(bot, update, occupied, k=0):
@@ -477,6 +485,39 @@ def callback_prio_set(bot, update, task):
         bot.send_message(
             chat_id=chatID,
             text='dasar kaw anak ikan gini aja gangerti :v')
+    elif (task == 'PC'):
+        PC_markup(bot, update)
+
+
+def PC_markup(bot, update):
+    chatID = update.callback_query.message.chat_id
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "Change prio",
+                callback_data='takepc| (1) Single Monitors')
+        ],
+        [
+            InlineKeyboardButton(
+                "Accept prio",
+                callback_data='takepc|(2) Dual Monitors')
+        ],
+        [
+            InlineKeyboardButton(
+                "What does the number mean",
+                callback_data='takepc|(3) Triple Monitors'),
+        ]
+        [
+            InlineKeyboardButton(
+                "PC booking",
+                callback_data='takepc|Curved Monitors')
+        ]
+    ]
+    xxx = InlineKeyboardMarkup(keyboard)
+    bot.send_message(
+            chat_id=chatID,
+            text="Choose your PC",
+            reply_markup=xxx)
 
 
 def change_prio(bot, update):
