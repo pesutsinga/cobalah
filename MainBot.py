@@ -2,18 +2,39 @@
     YA GW TAU INI BELOM JADI
     maafkan segala dosaku kawan" ...
 """
-from telegram.ext.dispatcher import run_async
+from captcha.image import ImageCaptcha
+from datetime import datetime
+from functools import wraps
+from io import BytesIO
+from math import floor, ceil
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters
+from telegram.ext.dispatcher import run_async
 from utilBot import ChopeBot
+import os
+import pprint
+import random
+import sys
+import time
 import utilBrowser
 import utilDB
-import pprint
-import string
-import random
-from io import BytesIO
-from captcha.image import ImageCaptcha
+
+
+LIST_OF_ADMINS = [412231900]
+START_TIME = {}
+END_TIME = {}
 mainBot = None
+
+
+def restricted(func):
+    @wraps(func)
+    def wrapped(bot, update, *args, **kwargs):
+        user_id = update.effective_user.id
+        if user_id not in LIST_OF_ADMINS:
+            print("Unauthorized access denied for {}.".format(user_id))
+            return
+        return func(bot, update, *args, **kwargs)
+    return wrapped
 
 
 def parrot(bot, update):
@@ -23,23 +44,6 @@ def parrot(bot, update):
         text=update.message.text)
 
 
-@run_async
-def unknown_cmd(bot, update):
-    bot.send_message(
-        chat_id=update.message.chat_id,
-        text="I can't understand your command")
-    help_cmd(bot, update)
-
-
-@run_async
-def help_cmd(bot, update):
-    bot.send_message(
-        chat_id=update.message.chat_id,
-        text="some random ass command list")
-    pass
-
-
-@run_async
 def tgusername_check(bot, update):
     username = update.message.from_user.username
     if username is not None:
@@ -47,13 +51,11 @@ def tgusername_check(bot, update):
     return False
 
 
-@run_async
 def ask_username(bot, update):
     global mainBot
     mainBot.ask(bot, update, "username apaan ?", ans_username)
 
 
-@run_async
 def ans_username(bot, update):
     global mainBot
     utilDB.set_username(
@@ -62,13 +64,11 @@ def ans_username(bot, update):
     ask_password(bot, update)
 
 
-@run_async
 def ask_password(bot, update):
     global mainBot
     mainBot.ask(bot, update, "password apaan ?", ans_password)
 
 
-@run_async
 def ans_password(bot, update):
     global mainBot
     print('huehuehue')
@@ -80,22 +80,118 @@ def ans_password(bot, update):
     start_cmd(bot, update)
 
 
-@run_async
+def ask_start_chope(bot, update, callback=False):
+    print("lsdkfsdf'")
+    if callback:
+        chatID = update.callback_query.message.chat_id
+    else:
+        chatID = update.message.chat_id
+
+    global mainBot
+    bot.send_message(
+        chat_id=chatID,
+        text="mulai jam berapa  HH:MM ?")
+    mainBot.set_phase(chatID, ans_start_chope)
+
+
+def ans_start_chope(bot, update):
+    strTime = update.message.text
+    strTime = strTime.strip(' ')
+    strTime = strTime.split(':')
+    try:
+        print(strTime)
+        hour = int(strTime[0])
+        minute = int(strTime[1])
+        if not (9 <= hour < 21):
+            print(1/0)
+        if not (0 <= minute < 60):
+            print(1/0)
+
+        minute = floor(minute / 30) * 30
+        START_TIME[update.message.chat_id] = (hour, minute)
+        ask_end_chope(bot, update)
+    except:
+        ask_start_chope(bot, update)
+
+
+def ask_end_chope(bot, update):
+    global mainBot
+    mainBot.ask(bot, update, "sampe  HH:MM ?", ans_end_chope)
+
+
+def ans_end_chope(bot, update):
+    strTime = update.message.text
+    strTime = strTime.strip(' ')
+    strTime = strTime.split(':')
+    try:
+        hour = int(strTime[0])
+        minute = int(strTime[1])
+        if not (9 <= hour < 21):
+            print(1/0)
+        if not (0 <= minute < 60):
+            print(1/0)
+
+        minute = ceil(minute / 30) * 30
+        END_TIME[update.message.chat_id] = (hour, minute)
+        ask_captcha(bot, update)
+    except:
+        ask_end_chope(bot, update)
+
+
+def ask_captcha(bot, update):
+    global mainBot
+    chatID = update.message.chat_id
+    msgLower = update.message.text.lower()
+    solnLower = str(mainBot.get_captcha_solution(chatID)).lower()
+    print()
+    if msgLower == solnLower:
+        bot.send_message(
+            chat_id=chatID,
+            text="please wait, be calm, this may take 2 min")
+        print(str(datetime.now()))
+        occupied = check_seat(update.message.from_user.username, chatID)
+        print_seat(bot, update, occupied)
+        return
+
+    image = ImageCaptcha(
+        fonts=['fonts/captcha.ttf'])
+    unambiguousChars = '23456789abcdefghkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'
+    randStr = ''.join(random.choice(unambiguousChars) for _ in range(6))
+    data = image.generate(randStr)
+    assert isinstance(data, BytesIO)
+    image.write(randStr, 'curCaptcha.png')
+
+    mainBot.set_phase(chatID, ask_captcha)
+    bot.send_photo(chat_id=chatID, photo=open('curCaptcha.png', 'rb'))
+    bot.send_message(chat_id=chatID, text="please write the captcha")
+    mainBot.set_captcha_solution(chatID, randStr)
+
+
 def login_check(bot, update):
     username = update.message.from_user.username
     chatID = update.message.chat_id
     usr = utilDB.get_username(username)
     pwd = utilDB.get_password(username, chatID)
-    print(chatID)
-    print(usr)
-    print(pwd)
     canLogin = utilBrowser.try_login(usr, pwd)
-    print(canLogin)
     return canLogin
 
 
-@run_async
+def check_seat(tgUsername, chatID):
+    usr = utilDB.get_username(tgUsername)
+    pwd = utilDB.get_password(tgUsername, chatID)
+    instances = utilBrowser.ChopeBrowser()
+    occupied = instances.scrape_seats(usr, pwd)
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(occupied)
+    print(str(datetime.now()))
+    return occupied
+
+
 def start_cmd(bot, update):
+    global mainBot
+    chatID = update.message.chat_id
+    mainBot.prioMessageID[chatID] = None
+    mainBot.captchaSolution[chatID] = None
     bot.send_message(
         chat_id=update.message.chat_id,
         text="Let me first run some checks")
@@ -121,19 +217,30 @@ def start_cmd(bot, update):
     prio_cmd(bot, update)
 
 
-@run_async
+def unknown_cmd(bot, update):
+    bot.send_message(
+        chat_id=update.message.chat_id,
+        text="I can't understand your command")
+    help_cmd(bot, update)
+
+
+def help_cmd(bot, update):
+    bot.send_message(
+        chat_id=update.message.chat_id,
+        text="some random ass command list")
+    pass
+
+
 def prio_text(tgUsername):
     listPrio = utilDB.get_prio(tgUsername)
     listPrio = [(k, v) for k, v in listPrio.items()]
     listPrio.sort()
-    print(listPrio)
     msg = ""
     for key, val in listPrio:
         msg += str(key).replace('_', ' ').title() + ": " + str(val) + "\n"
     return msg
 
 
-@run_async
 def prio_markup():
     keyboard = [
         [
@@ -155,7 +262,6 @@ def prio_markup():
     return InlineKeyboardMarkup(keyboard)
 
 
-@run_async
 def prio_cmd(bot, update):
     global mainBot
     bot.send_message(
@@ -170,15 +276,8 @@ def prio_cmd(bot, update):
         reply_markup=prio_markup())
 
     mainBot.set_prio_message_id(update.message.chat_id, prio_msg.message_id)
-    print(prio_msg.message_id)
 
 
-@run_async
-def order_cmd(bot, update):
-    pass
-
-
-@run_async
 def convo_handler(bot, update):
     global mainBot
     func = mainBot.phase(update)
@@ -191,10 +290,9 @@ def convo_handler(bot, update):
 
         bot.send_message(
             chat_id=update.message.chat_id,
-            text="Baru on jam" + mainBot.firstOnline)
+            text="first online: " + mainBot.firstOnline)
 
 
-@run_async
 def callback_handler(bot, update):
     global mainBot
     callbackData = update.callback_query.data
@@ -231,71 +329,70 @@ def callback_handler(bot, update):
             message_id=update.callback_query.message.message_id,
             text=update.callback_query.message.text,
             reply_markup=reply_markup)
-        print('asdfadsf')
 
 
-def find_seat(tgUsername, chatID):
-    usr = utilDB.get_username(tgUsername)
-    pwd = utilDB.get_password(tgUsername, chatID)
-    print(usr, pwd)
-    instances = utilBrowser.ChopeBrowser()
-    occupied = instances.scrape_seats(usr, pwd)
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(occupied)
-    return occupied
+def print_seat(bot, update, occupied):
+    occupiedLength = len(occupied)
+
+    typeName = [
+        "Circular Pods",
+        "Collab Booths",
+        "Learning Pods",
+        "Recording Room",
+        "Video Conferencing Room"]
+
+    seatName = []
+    seatType = []
+    seatPrio = []
+    for i in range(0, occupiedLength, 2):
+        seatName.append(occupied[i])
+
+    nSeat = len(seatName)
+
+    # Sorry hardcoded this is Friday 10 am
+    seatType.extend([0] * 2)
+    seatType.extend([1] * 12)
+    seatType.extend([0] * 1)
+    seatType.extend([2] * 6)
+    seatType.extend([4] * 1)
+    seatType.extend([3] * 1)
+    seatType.extend([0] * 2)
+
+    print(seatType)
+    print('sdkfl')
+    tgUsername = update.message.from_user.username
+    listPrio = utilDB.get_prio(tgUsername)
+
+    print('sfkl')
+    print(listPrio)
+    for i in range(nSeat):
+        parsed = typeName[seatType[i]].upper().replace(' ', '_')
+        seatPrio.append(listPrio.get(parsed))
+
+    now = datetime.datetime.now()
+    today = now.weekday()
+    today = (now + 1) % 7
+
+    for i in range(nSeat):
+        print(seatName[i], typeName[seatType[i]], seatPrio[i])
+
+    for i in range(1, occupiedLength, 2):
+        for j in occupied[i][today]:
+            print(j)
 
 
-@run_async
-def ask_captcha(bot, update, callback=False):
-    global mainBot
-    if callback:
-        chatID = update.callback_query.message.chat_id
-    else:
-        chatID = update.message.chat_id
-
-    if (not callback):
-        if mainBot.get_captcha_solution(chatID) == update.message.text:
-            bot.send_message(
-                chat_id=chatID,
-                text="please wait, be calm, this may take 3 min")
-            find_seat(update.message.from_user.username, chatID)
-            return
-
-    image = ImageCaptcha(
-        fonts=['fonts/Inconsolata-g.ttf', 'fonts/RobotoSlab-Regular.ttf'])
-    randStr = ''.join(random.choice(
-        string.ascii_lowercase + string.digits) for _ in range(6))
-    data = image.generate(randStr)
-    print('hehshe')
-    assert isinstance(data, BytesIO)
-    image.write(randStr, 'curCaptcha.png')
-    print('afeois')
-
-    mainBot.set_phase(chatID, ask_captcha)
-    print('sfle')
-    bot.send_photo(chat_id=chatID, photo=open('curCaptcha.png', 'rb'))
-    bot.send_message(chat_id=chatID, text="please write the captcha")
-    print("alsdkfa")
-    mainBot.set_captcha_solution(chatID, randStr)
-
-
-@run_async
 def callback_prio_set(bot, update, task):
     chatID = update.callback_query.message.chat_id
     if (task == 'change prio'):
         change_prio(bot, update)
     elif (task == 'accept prio'):
-        bot.send_message(
-            chat_id=chatID,
-            text='hai')
-        ask_captcha(bot, update, True)
+        ask_start_chope(bot, update, True)
     elif (task == 'help prio'):
         bot.send_message(
             chat_id=chatID,
             text='dasar kaw anak ikan gini aja gangerti :v')
 
 
-@run_async
 def change_prio(bot, update):
     chatID = update.callback_query.message.chat_id
 
@@ -303,13 +400,12 @@ def change_prio(bot, update):
         "Circular Pods",
         "Collab Booths",
         "Learning Pods",
-        "Learning Room",
-        "Recording Room"]
+        "Recording Room",
+        "Video Conferencing Room"]
 
     prioList = utilDB.get_prio(update.callback_query.from_user.username)
     for seat in seats:
         val = prioList[seat.upper().replace(' ', '_')]
-        print(val)
         keyboard = []
         for i in range(6):
             pad = "**" if i == val else "__"
@@ -324,14 +420,26 @@ def change_prio(bot, update):
             reply_markup=reply_markup)
 
 
+@restricted
+def reboot(bot, update):
+    bot.send_message(update.message.chat_id, "Bot is restarting...")
+    time.sleep(0.2)
+    os.execl(sys.executable, sys.executable, *sys.argv)
+
+
+
 def main():
+    print('asfd')
     global mainBot
-    mainBot = ChopeBot('377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g')
+    # TOKEN = "406125095:AAEiPIwPMdD18XA39VtAplp5L7MdUm0cFEM"
+    TOKEN = "377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g"
+    mainBot = ChopeBot(TOKEN)
     mainBot.handle_msg(Filters.text, convo_handler)
     mainBot.handle_cmd('start', start_cmd)
     mainBot.handle_cmd('changeusername', ask_username)
     mainBot.handle_cmd('prio', prio_cmd)
     mainBot.handle_cmd('help', help_cmd)
+    mainBot.handle_cmd('r', reboot)
     mainBot.handle_callback(callback_handler)
     mainBot.handle_msg(Filters.command, unknown_cmd)
     mainBot.deploy()

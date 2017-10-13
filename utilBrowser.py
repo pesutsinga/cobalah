@@ -74,14 +74,17 @@ class ChopeBrowser:
         evFacilities = []
         dropdown = self.chrome.find_by_id('ResourceId')
         options = dropdown.find_by_tag('option')
-        for opt in options:
+        optRange = range(len(options))
+        for i in optRange:
+            opt = options[i]
             nextOption = opt
             nextOption.click()
-            self.time_delay(0.1)
+            self.time_delay(0.05)
             # while loadingTitle.visible:
             #     pass
             evFacilities.append(opt.text)
             self.check_facility(evFacilities)
+        self.quit()
         return evFacilities
 
     def quit(self):
@@ -89,7 +92,7 @@ class ChopeBrowser:
 
 
 def try_login(usr, pwd):
-    return True    # TODO: REMOVE THIS DEBUG
+    # return True    # TODO: REMOVE THIS DEBUG
     instances = ChopeBrowser()
     url = 'https://ntupcb.ntu.edu.sg'
     url += '/fbscbs/Account/SignIn?ReturnUrl=%2ffbscbs'
