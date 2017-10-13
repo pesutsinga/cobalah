@@ -5,16 +5,7 @@ from Crypto.Cipher import AES
 
 class ChopeDB:
     table = None
-    """
-        jadi kalo mau connect ke db tinggal MySQLConnector(namadb)
-        terus di assign ke variable mis:
-        db = MySQLConnector("apalah")
 
-        terus pas misal mau insert tinggal
-        db.insert('tablename', arguments)
-        coba liat trial-mysql.py kalo mo coba"
-        makasih :)
-    """
     def __init__(self, database='u7728567_chopebot'):
         self.connection = pymysql.connect(
             host='bebong.id',
@@ -22,23 +13,6 @@ class ChopeDB:
             password='bunuakumz578%&*',
             db=database,
             charset='utf8mb4')
-        """
-            cursorclass=pymysql.cursors.DictCursor)
-
-            bagian ini tak buang karena kalo pake
-            cursorclass ini, ngaruh ke hasil query sql
-            select
-
-            misal mo ngeselect field username sm password
-            contoh hasil query kalo pake cursorclass nya:
-            {('USERNAME' : 'iniusername', 'PASSWORD' : 'inipassword')}
-            lupa persisnya gimana, intinya jd gbs w akses per elemen
-            kalo ga pake:
-            (('iniusername', 'inipassword'),)
-
-            suda mencoba untuk fungsi lainnya, jalan2 aja ga ada efek
-
-        """
 
     def set_table(self, tableName):
         self.table = tableName
@@ -48,11 +22,7 @@ class ChopeDB:
 
     def insert(self, table, data=[]):
         """
-        insert documentation
-
-        table: string
-            nama table yang lw mo masukin
-
+        table: string, name of table to insert data into
         data: list of tuples (colname, type, value)
             e.g. ('favCartoonCharacter', "%s", 'Donald Duck')
             "%s" denotes string
@@ -61,22 +31,27 @@ class ChopeDB:
             et cetera.
         """
         v = VPrinter(True)
-
+         
+        # Create strings to concatenate with with SQL statement
         colName = ', '.join([('`' + elm[0] + '`') for elm in data])
+        # Use vprint() functions several times to check if the desired string is created
         v.vprint(colName)
         colType = ', '.join([elm[1] for elm in data])
         v.vprint(colType)
-
+        
+        # Create SQL INSERT query
         statement = (
             "INSERT INTO " + table
             + " (" + colName + ") "
             + "VALUES (" + colType + ")")
         v.vprint(statement)
 
+        # Create a tuple of the arguments necessary for query
         args = tuple([elm[2] for elm in data])
         v.vprint(args)
 
         try:
+            # Execute SQL query with separate argument to prevent SQL injection attacks
             with self.connection.cursor() as cursor:
                 cursor.execute(statement, args)
             self.connection.commit()
@@ -84,12 +59,12 @@ class ChopeDB:
             pass
 
     def delete(self, table, condition, values):
-        # TODO: benerin docstring benda ini  jerrell ngantuk ini jam 5:20
+        
         """
-            table ya tablename
-            condition dibikin sendiri like
-            'kolomapa = %d OR (kolomlain = %s AND yang lain = %f)'
-            values ya list of barang lah buat isi persen"nya
+            table : string of table name
+            condition:
+            'column = %d OR (other column = %s AND another column = %f)'
+            values : values to replace '%d', '%s', etc.
         """
 
         v = VPrinter(True)
@@ -151,25 +126,14 @@ class ChopeDB:
     def select(self, table, targetVariables, data=[]):
         """
         table: string
-        data: list of tuples (colName, data type, colValue, colSelect,
-                              targetVariables)
-                              (targetVariables nya gagal msk bagian dr list
-                              jadi w masukkin parameter, more info ahead)
+        data: list of tuples (colName, data type, colValue, colSelect)
         colName: Name of column to be checked
         data type: data type of values within colName
         colValue: Value to find within column colName
         colSelect: list of columns to be selected
-        targetVariables: list of variables to assign values from the
-                        selected columns (listed in the same order
-                        as colSelect)
-                        P.S. : hai jerrell, berhubung bagian ini
-                        gagal w bikin (bc apparently ucannot make
-                        a list of variables in python sorry am clueless)
-                        instead of individual variables
-                        smw values yg keselect dlm 1 argum w taro smw
-                        dlm 1 list aja ye maapkan q suda berusaha
-                        (nama listnya targetVariables)
-
+        targetVariables: A list to store all the selected data
+        (a value returned to the main program)
+                      
         """
 
         v = VPrinter(True)
@@ -178,14 +142,17 @@ class ChopeDB:
         deletChar = "[]\'"
         Count = len(data)
         targetVariables = []
-
+        
+        # Loop to create multiple queries based on the number of tuples in data
         for i in range(Count):
             elm = data[i]
             FieldNameStr = str(elm[3])
-
+            
+            # Replace characters from FieldNameStr before concatenation so it follows SQL syntax
             for char in deletChar:
                 FieldNameStr = FieldNameStr.replace(char, " ")
 
+            # Prepare SQL SELECT query    
             statement = (
                 "SELECT " + FieldNameStr
                 + " FROM " + table
@@ -199,8 +166,9 @@ class ChopeDB:
                 with self.connection.cursor() as cursor:
                     cursor.execute(statement, args)
                 results = cursor.fetchall()
-                print(results)
-
+                # print(results)
+                
+                # Store selected information into targetVariables
                 for row in results:
                     for j in range(len(row)):
                         targetVariables.append((row[j]))
@@ -211,9 +179,10 @@ class ChopeDB:
 
     def select_dict(self, tgUsername):
         """
-        p.s.
-        w bikin connection lagi disini biar bs pake dictionary cursor
-        khusus bwt fungsi ini doang
+        A select function specific for selecting user's LWN facility priority
+        Produces a dictionary instead of a list
+        A new connection has been created here in order to exclusively
+        use the Dictionary Cursor here
         """
 
         self.connection = pymysql.connect(
@@ -225,7 +194,7 @@ class ChopeDB:
             cursorclass=pymysql.cursors.DictCursor)
 
         sql = ("SELECT COLLAB_BOOTHS, CIRCULAR_PODS, \
-            LEARNING_PODS, RECORDING_ROOM, LEARNING_ROOM \
+            LEARNING_PODS, RECORDING_ROOM, VIDEO_CONFERENCING_ROOM \
             FROM LIBCHOP \
             WHERE TELEGRAMID = %s")
 
@@ -238,29 +207,24 @@ class ChopeDB:
 
         return results[0]
 
-    # return dict of name and prio
-    # return {'batman': 'nannanananan', 'batmaaan': 'nanananannana'}
-
 
 def set_username(tgUsername, username):
     # Function to store NTU username, given the telegram username
     db = ChopeDB()
 
     targetVariables = SelectList = []
-
+     
     """
-
-    Update : changed selected field to be checked from "USERNAME" to "TELEGRAMID"
-    so that if username field is empty yet the telegramID exists in database,
-    program will update the row belonging to the existing telegramID
-    instead of inserting a new row. Same update applies to set_password
+    Check if the user's Telegram Username exists in database
+    If it does, update user's NTU username
+    if not, insert telegram and NTU username into a new row
+    The same logic applies for the next function, set_password
     """
-
     SelectList.append(("TELEGRAMID", "%s", tgUsername, "TELEGRAMID"))
 
     targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
     print(targetVariables)
-
+    
     if targetVariables == []:
         InsertList = []
         InsertList.append(("TELEGRAMID", '%s', tgUsername))
@@ -276,13 +240,14 @@ def set_username(tgUsername, username):
 
 
 def set_password(tgUsername, password, chatID):
-    # Update : chatID parameter now as integer first instead of string
+    # input chatID as integer, while the rest of the parameters as string
 
     db = ChopeDB()
-    # pad the key until it is 16 characters long
+    # pad the key until it is 16 characters long before encryption
     encryptKey = str(chatID)
     while len(encryptKey) < 16:
         encryptKey = encryptKey + "]"
+    
     obj = AES.new(encryptKey, AES.MODE_CFB, 'This is an IV456')
     encryptedPass = obj.encrypt(password)
 
@@ -347,7 +312,7 @@ def get_username(tgUsername):
 
 
 def get_password(tgUsername, chatID):
-    # Update : chatID parameter now as integer first instead of string
+    # tgUsername in string, chatID in integer
 
     db = ChopeDB()
 
@@ -370,12 +335,8 @@ def get_password(tgUsername, chatID):
     Password = obj2.decrypt(encryptedPass)
     strPassword = str(Password)
     strPassword = strPassword.strip("b'")
-    print(strPassword)
     db.close()
     return strPassword
-
-    # return password given tgUsername dan di decrypt pake chatID
-    # return "" if inexistent
 
 
 def get_prio(tgUsername):
