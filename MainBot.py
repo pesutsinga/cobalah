@@ -427,7 +427,7 @@ def print_seat(bot, update, occ, tom=0):
 
     seatOcc = [occ[i] for i in range(1, occLen, 2)]
 
-    today = datetime.now().weekday()
+    today = datetime.now().weekday() - 2
 
     for i in range(nSeat):
         seatOcc[i] = seatOcc[i][today]
@@ -455,6 +455,7 @@ def print_seat(bot, update, occ, tom=0):
 
     # OPTIMIZE: could use DP next time
     # Take the best seat greedily
+    firstSeat = True
     for j in range(stTime, enTime):
         curBest = nSeat
         cumLen += 1
@@ -465,7 +466,9 @@ def print_seat(bot, update, occ, tom=0):
         if lastTake != curBest:
             if cumLen == 0:
                 continue
-            soln = "You can take " + seatName[lastTake] + " for " + str(cumLen) + " x 30mins"
+            soln = "first, " if firstSeat else "then, "
+            firstSeat = False
+            soln += "You can take " + seatName[lastTake] + " for " + str(cumLen) + " x 30mins"
 
             bot.send_message(
                 chat_id=chatID,
@@ -473,7 +476,8 @@ def print_seat(bot, update, occ, tom=0):
             lastTake = curBest
             cumLen = 0
 
-    soln = "You can take " + seatName[lastTake] + " for " + str(cumLen + 1) + " x 30mins"
+    soln = "first, " if firstSeat else "lastly, "
+    soln += "you can take " + seatName[lastTake] + " for " + str(cumLen + 1) + " x 30mins"
     bot.send_message(
         chat_id=chatID,
         text=soln)
@@ -565,9 +569,6 @@ def reboot(bot, update):
 def main():
     print('please try this bot with only student domain user')
     print('and run this program in ntu environment to access ntufbs')
-    run = input('run the bot [Y/n] : ')
-    if run.lower() != 'y':
-        return
 
     global mainBot
     print('Bot is prepared')
