@@ -427,7 +427,7 @@ def print_seat(bot, update, occ, tom=0):
 
     seatOcc = [occ[i] for i in range(1, occLen, 2)]
 
-    today = datetime.now().weekday() - 2
+    today = datetime.now().weekday()
 
     for i in range(nSeat):
         seatOcc[i] = seatOcc[i][today]
