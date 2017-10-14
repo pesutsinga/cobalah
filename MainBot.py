@@ -457,30 +457,23 @@ def prisya(bot, update, occ, tom=0):
         print()
 
 
-def print_seat(bot, update, occupied, k=0):
-    occupiedLength = len(occupied)
+def print_seat(bot, update, occ, tom=0):
+    chatID = update.message.chat_id
+    occLen = len(occ)
+    nSeat = occLen // 2
 
-    typeName = [
+    tgUsername = update.message.from_user.username
+    castePrio = utilDB.get_prio(tgUsername)
+    casteName = [
         "Circular Pods",
         "Collab Booths",
         "Learning Pods",
         "Recording Room",
         "Video Conferencing Room"]
 
-    seatName = []
+    seatName = [occ[i] for i in range(0, occLen, 2)]
+
     seatType = []
-    seatPrio = []
-    seatOcc = []
-    bestSoln = [[[0] * 100] * 100]
-    for i in bestSoln:
-        print(bestSoln)
-    for i in range(0, occupiedLength, 2):
-        seatName.append(occupied[i])
-
-    nSeat = occupiedLength // 2
-
-    # Sorry hardcoded this is Friday 10 am (i don't have time)
-    # I havent done the print to user
     seatType.extend([0] * 2)
     seatType.extend([1] * 12)
     seatType.extend([0] * 1)
@@ -489,113 +482,86 @@ def print_seat(bot, update, occupied, k=0):
     seatType.extend([3] * 1)
     seatType.extend([0] * 2)
 
-    print(seatType)
-    print('sdkfl')
-    tgUsername = update.message.from_user.username
-    listPrio = utilDB.get_prio(tgUsername)
-
-    print('sfkl')
-    print(listPrio)
-    for i in range(nSeat):
-        parsed = typeName[seatType[i]].upper().replace(' ', '_')
-        seatPrio.append(listPrio.get(parsed))
-    print(seatPrio)
-    print('lol')
-    now = datetime.now()
-    today = now.weekday()
-    today = (today + k) % 7
-    for i in range(1, occupiedLength, 2):
-        seatOcc.append(occupied[i][today])
-
-    # print(seatPrio)
-    print('sdkfl')
-    # DP table initialisation
-    for i in range(nSeat):
-        for j in range(50):
-            bestSoln[i][j] = seatPrio[i]
-            print(i, j, bestSoln[i][j])
-    # print(bestSoln)
+    seatPrio = [castePrio[casteName[seat].upper().replace(' ', '_')] for seat in seatType]
 
     for i in range(nSeat):
-        for j in seatOcc[i]:
-            strTime = j[0]
-            strTime = strTime.strip(' ')
-            strTime = strTime.split(':')
-            hr = int(strTime[0])
-            mn = int(strTime[1])
-            st = mn // 30
-            st += 2 * hr
+        print(seatName[i], casteName[seatType[i]], seatPrio[i])
 
-            strTime = j[1]
-            strTime = strTime.strip(' ')
-            strTime = strTime.split(':')
-            hr = int(strTime[0])
-            mn = int(strTime[1])
-            en = mn // 30
-            en += 2 * hr
-            en -= 1
-            #print(st, en)
+    seatOcc = [occ[i] for i in range(1, occLen, 2)]
+
+    today = datetime.now().weekday()
+    # nnt hapus
+    today -= 1
+
+    for i in range(nSeat):
+        seatOcc[i] = seatOcc[i][today]
+
+    occTable = []
+    for i in range(nSeat):
+        occTable.append([seatPrio[i]] * 50)
+
+    seatName.append("seatless")
+    occTable.append([0] * 50)
+
+    print(occTable)
+
+    print('hololo')
+    for i in range(nSeat):
+        print(seatName[i])
+        print(seatOcc[i])
+
+    for i in range(nSeat):
+        seat = seatOcc[i]
+        print(seat)
+        for dura in seat:
+            print(dura)
+            st = enc_time(dura[0])
+            en = enc_time(dura[1])
             print(st, en)
             for k in range(st, en):
-                bestSoln[i][k] = -1
+                occTable[i][k] = 0
 
-    for i in range(nSeat):
-        for j in range(50):
-            print(i, j, bestSoln[i][j])
+    stTime = enc_time(START_TIME[chatID])
+    enTime = enc_time(END_TIME[chatID])
 
-    print('sdfkl')
-    # We want to maximise total "prio"
-    strTime = START_TIME[update.message.chat_id]
-    print(strTime)
-    hr = int(strTime[0])
-    mn = int(strTime[1])
-    st = mn // 30
-    st += 2 * hr
-    print('sdlfk')
+    print('horehorehore123123123')
+    lastTake = nSeat
+    cumLen = -1
+    for j in range(stTime, enTime):
+        curBest = nSeat
+        cumLen += 1
+        for i in range(nSeat):
+            print('slelskdf')
+            if occTable[i][j] >= occTable[curBest][j]:
+                curBest = i
 
-    strTime = END_TIME[update.message.chat_id]
-    print(strTime)
-    hr = int(strTime[0])
-    mn = int(strTime[1])
-    en = mn // 30
-    en += 2 * hr
-    # en -= 1
-
-    print('sfiel')
-    seatName.append("seatless")
-
-    print('sdfl')
-    # OPTIMIZE: we could do DP in the future
-    cumLen = 0
-    lastTake = nSeat + 1
-
-    for i in range(nSeat):
-        for j in range(st, en):
-            print(i, j, bestSoln[i][j])
-        print()
-    for i in range(st, en):
-        curBest = nSeat + 1
-        print('sfkl')
-        for j in range(nSeat):
-            cumLen += 1
-            if (bestSoln[j][i] > bestSoln[curBest][i]):
-                curBest = j
-
+        print(curBest)
         if lastTake != curBest:
-            print('483')
-            soln = "take " + seatName[lastTake] + " for" + int(cumLen) + " blocks"
+            if cumLen == 0:
+                continue
+            print('lol')
+            print(seatName[lastTake])
+            print(cumLen)
+            soln = "take " + seatName[lastTake] + " for" + str(cumLen) + " blocks"
             print(soln)
 
             bot.send_message(
-                chat_id=update.message.chat_id,
+                chat_id=chatID,
                 text=soln)
-
             lastTake = curBest
             cumLen = 0
 
+    soln = "take " + seatName[lastTake] + " for" + str(cumLen + 1) + " blocks"
     bot.send_message(
-        chat_id=update.message.chat_id,
-        text="take " + seatName[lastTake] + " for" + int(cumLen) + " blocks")
+        chat_id=chatID,
+        text=soln)
+
+    print('horhorhor')
+
+    for j in range(stTime, enTime):
+        for i in range(nSeat):
+            print(occTable[i][j], end=' ')
+        print()
 
 
 def callback_prio_set(bot, update, task):
