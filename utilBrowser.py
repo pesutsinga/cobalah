@@ -42,7 +42,7 @@ class ChopeBrowser:
         return data[0], can_book
 
     def type_number(self, Types):
-        for i in range(4):
+        for i in range(0, 4):
             with self.chrome.get_iframe('frmAdminViewControls') as iframe:
                 page = iframe.find_by_id('pnlInsPcGrp'+str(i))
                 if page != []:
@@ -52,21 +52,25 @@ class ChopeBrowser:
                     page = page.get_text()
                     if page == Types:
                         page = iframe.find_by_id('pnlInsPcGrp'+str(i)).click()
+                        return
         return 0
 
     def scrape_pc(self):
         with self.chrome.get_iframe('frmSeating') as iframe:
             for i in range(0, 6):
+
                 for j in range(1, 11):
+                    print(i, j)
                     idd = 'grdSeating_tblCol' + str(j) + '_' + str(i)
                     parse = iframe.find_by_id(idd)
+                    print('asafhkakf')
                     if parse == []:
                         return 'no pc', 100, 100
-                        break
                     if parse != []:
                         warna = self.color(parse.html)
-                    if (warna == '#FFFFFF'):
-                        return self.name_pc(parse.html), j, i
+                        print(warna)
+                        if (warna == '#FFFFFF'):
+                            return self.name_pc(parse.html), j, i
         no_pc = 'no pc'
         j = 100
         i = 100
@@ -91,13 +95,17 @@ class ChopeBrowser:
                 try:
                     time.sleep(1)
                     butt = iframe.find_by_id("grdSeating_divOuterCol" + str(col)+"_" + str(row))
+                    print('a')
                     if butt != []:
                         butt.click()
                     time.sleep(1)
+                    print('b')
                     sub = iframe.find_by_name("btnsumit")
                     sub.click()
+                    print('c')
                     return "booked"
                 except:
+                    print('f')
                     pyautogui.press('enter')
                     return "cannot book"
         return "cannot book"
