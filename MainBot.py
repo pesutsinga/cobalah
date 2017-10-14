@@ -1,7 +1,3 @@
-"""
-    YA GW TAU INI BELOM JADI
-    maafkan segala dosaku kawan" ...
-"""
 from captcha.image import ImageCaptcha
 from datetime import datetime
 from functools import wraps
@@ -10,6 +6,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters
 from telegram.ext.dispatcher import run_async
 from utilBot import ChopeBot
+from emoji import emojize
 import os
 import pprint
 import random
@@ -22,6 +19,9 @@ import utilDB
 LIST_OF_ADMINS = [412231900]
 START_TIME = {}
 END_TIME = {}
+BOOKING_TYPE = {}
+PC_TYPE = {}
+
 mainBot = None
 
 
@@ -49,10 +49,13 @@ def tgusername_check(bot, update):
         return True
     return False
 
+
 @run_async
 def ask_username(bot, update):
     global mainBot
-    mainBot.ask(bot, update, "Your NTU Username ?", ans_username)
+    mainBot.ask(bot, update, emojize("To assist you, I will need your NTU account details! First of all, please type in your NTU account username :keyboard:",
+                                      use_aliases=True), ans_username)
+
 
 @run_async
 def ans_username(bot, update):
@@ -62,10 +65,14 @@ def ans_username(bot, update):
         username=update.message.text)
     ask_password(bot, update)
 
+
 @run_async
 def ask_password(bot, update):
     global mainBot
-    mainBot.ask(bot, update, "Your NTU Password ?", ans_password)
+    mainBot.ask(bot, update,
+                emojize("Next, type in your password. \n(We won't tell anyone :lock:)",
+                         use_aliases=True), ans_password)
+
 
 @run_async
 def ans_password(bot, update):
@@ -76,6 +83,7 @@ def ans_password(bot, update):
         password=update.message.text,
         chatID=update.message.chat_id)
     start_cmd(bot, update)
+
 
 @run_async
 def ask_start_chope(bot, update, callback=False):
@@ -88,7 +96,7 @@ def ask_start_chope(bot, update, callback=False):
     global mainBot
     bot.send_message(
         chat_id=chatID,
-        text="start time  HH:MM ?")
+        text=emojize("Okay, now tell me, for when do you want to book your seat? :clock10: \nGive me the starting time. (HH:MM)", use_aliases=True))
     mainBot.set_phase(chatID, ans_start_chope)
 
 
@@ -110,10 +118,14 @@ def ans_start_chope(bot, update):
     except:
         ask_start_chope(bot, update)
 
+
 @run_async
 def ask_end_chope(bot, update):
     global mainBot
-    mainBot.ask(bot, update, "until  HH:MM ?", ans_end_chope)
+    mainBot.ask(bot, update,
+                emojize(":pencil: Noted! Until what time do you want to book? (HH:MM)",
+                        use_aliases=True), ans_end_chope)
+
 
 @run_async
 def ans_end_chope(bot, update):
@@ -128,15 +140,31 @@ def ans_end_chope(bot, update):
         if not (0 <= minute < 60):
             print(1/0)
         END_TIME[update.message.chat_id] = update.message.text.strip(' ')
-        ask_captcha(bot, update, 1, None)
+        ask_captcha(bot, update, 1, None, False)
     except:
         ask_end_chope(bot, update)
 
+
 @run_async
-def ask_captcha(bot, update, numnum, pctype, callback=False):
+def ask_captcha(bot, update, bookingType=None, pcType=None, callback=False):
     global mainBot
-    if numnum == 1:
+
+    chatID = None
+    if callback:
+        chatID = update.callback_query.message.chat_id
+    else:
         chatID = update.message.chat_id
+
+    if bookingType is None:
+        bookingType = BOOKING_TYPE[chatID]
+
+    if pcType is None:
+        pcType = PC_TYPE[chatID]
+
+    BOOKING_TYPE[chatID] = bookingType
+    PC_TYPE[chatID] = pcType
+
+    if bookingType == 1:
         msgLower = update.message.text.lower()
         solnLower = str(mainBot.get_captcha_solution(chatID)).lower()
         print()
@@ -145,24 +173,26 @@ def ask_captcha(bot, update, numnum, pctype, callback=False):
             print("asalll")
             bot.send_message(
                 chat_id=chatID,
-                text="please wait, be calm, this may take 2 min")
+                text=emojize("Checking seats....this may take around 2 minutes. Please be patient!:sleeping:", use_aliases=True))
             print(str(datetime.now()))
             occupied = check_seat(update.message.from_user.username, chatID)
+            mainBot.set_phase(chatID, None)
             print_seat(bot, update, occupied)
             return
-    if numnum == 2:
+    if bookingType == 2:
         print('asdasaaa')
-        chatID = update.callback_query.message.chat_id
+
         bot.send_message(
                 chat_id=chatID,
-                text="please wait")
+                text="Please wait...")
         print("okaaay")
         print(update.callback_query.from_user.username)
-        check_pc(bot, update, update.callback_query.from_user.username, chatID, pctype)
+        mainBot.set_phase(chatID, None)
+        check_pc(bot, update, update.callback_query.from_user.username, chatID, pcType)
         return
     image = ImageCaptcha(
-        fonts=['fonts/captcha.ttf'])
-    unambiguousChars = '23456789abcdefghkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'
+        fonts=['fonts/Inconsolata-g.ttf'])
+    unambiguousChars = '23456789BCDEFGHJKLMNPQRSTUVWXYZ'
     randStr = ''.join(random.choice(unambiguousChars) for _ in range(6))
     mainBot.set_captcha_solution(chatID, randStr)
     data = image.generate(randStr)
@@ -171,18 +201,20 @@ def ask_captcha(bot, update, numnum, pctype, callback=False):
 
     mainBot.set_phase(chatID, ask_captcha)
     bot.send_photo(chat_id=chatID, photo=open('curCaptcha.png', 'rb'))
-    bot.send_message(chat_id=chatID, text="please write the captcha")
+    bot.send_message(chat_id=chatID, text=emojize("Please write this captcha! Thank you :smile:", use_aliases=True))
 
 
-def check_pc(bot, update, tgUsername, chatID, pctype):
+def check_pc(bot, update, tgUsername, chatID, pcType):
     print(tgUsername)
     usr = utilDB.get_username(tgUsername)
     pwd = utilDB.get_password(tgUsername, chatID)
     print(usr)
     instances = utilBrowser.ChopeBrowser()
-    result = instances.pc_setup(usr, pwd, pctype)
+    result = instances.pc_setup(usr, pwd, pcType)
     if result[1] == 'booked':
-        bot.send_message(chat_id=chatID, text="Successfully booked, this is your seat: " + result[0])
+        bot.send_message(
+            chat_id=chatID,
+            text=emojize(":heavy_check_mark: Successfully booked, this is your seat: " + result[0], use_aliases=True))
     else:
         bot.send_message(chat_id=chatID, text="Cannot book")
 
@@ -206,20 +238,24 @@ def check_seat(tgUsername, chatID):
     print(str(datetime.now()))
     return occupied
 
+
 @run_async
 def start_cmd(bot, update):
     global mainBot
     chatID = update.message.chat_id
+    BOOKING_TYPE[chatID] = 0
+    PC_TYPE[chatID] = 0
     mainBot.prioMessageID[chatID] = None
     mainBot.captchaSolution[chatID] = None
     bot.send_message(
         chat_id=update.message.chat_id,
-        text="Let me first run some checks")
+        text=emojize("Thanks for using LibChoppa! :smile: \nAllow me to help you chop your spot at LWN! \nBefore we continue, let me run some checks first! \nThank you for your patience~ \nPlease wait... :clock2: :clock4: :clock6: \n:interrobang:Confused? Just type /help !", use_aliases=True))
 
     if not tgusername_check(bot, update):
         bot.send_message(
             chat_id=update.message.chat_id,
-            text="bikin username dlu sana /start")
+            text=emojize("Oops! :open_mouth: Please restart the bot first and input your login details /start",
+                use_aliases=True))
         return
 
     print("user have username")
@@ -232,7 +268,7 @@ def start_cmd(bot, update):
 
     bot.send_message(
         chat_id=update.message.chat_id,
-        text="SUCCESSFUL")
+        text=emojize("Success!! :heavy_check_mark: :heavy_check_mark:", use_aliases=True))
 
     prio_cmd(bot, update)
 
@@ -240,14 +276,14 @@ def start_cmd(bot, update):
 def unknown_cmd(bot, update):
     bot.send_message(
         chat_id=update.message.chat_id,
-        text="I can't understand your command")
+        text=emojize("I'm sorry, I can't seem to understand your command. :interrobang:", use_aliases=True))
     help_cmd(bot, update)
 
 
 def help_cmd(bot, update):
     bot.send_message(
         chat_id=update.message.chat_id,
-        text="just /start and /changeusername")
+        text=emojize("Need to book Facilities of PC at the Lee Wee Nam Library? \nLibChoppa is for you! :sparkles: \nIf you're new to this bot, type /changeusername to give me your login information. \nI can assist you in Facilities Booking or PC Booking. \n:seat: For Facilities: You will get suggestions on which available seat you can take based on booking time and priority that you have given to me. \n:desktop_computer: For PC: You can choose a PC type, and I can book it automatically for you :ok_hand:" , use_aliases=True))
     pass
 
 
@@ -264,22 +300,22 @@ def prio_text(tgUsername):
 def prio_markup():
     keyboard = [
         [
-            InlineKeyboardButton(
-                "Change prio",
+            InlineKeyboardButton(emojize(
+                ":x: Change Priority", use_aliases=True),
                 callback_data='callback_prio_set|change prio'),
 
-            InlineKeyboardButton(
-                "Accept prio",
+            InlineKeyboardButton(emojize(
+                ":heavy_check_mark: Priority Accepted!", use_aliases=True),
                 callback_data='callback_prio_set|accept prio')
         ],
         [
-            InlineKeyboardButton(
-                "What does the number mean",
+            InlineKeyboardButton(emojize(
+                ":interrobang: What do these numbers mean?", use_aliases=True),
                 callback_data='callback_prio_set|help prio')
         ],
         [
             InlineKeyboardButton(
-                "PC booking",
+                "I want to book PCs instead",
                 callback_data='callback_prio_set|PC')
         ]
     ]
@@ -291,7 +327,7 @@ def prio_cmd(bot, update):
     global mainBot
     bot.send_message(
         chat_id=update.message.chat_id,
-        text="here is the list of your prio")
+        text="Here is the list that I have of your facility booking priority!\nIs this correct?")
 
     msg = prio_text(update.message.from_user.username)
 
@@ -311,11 +347,11 @@ def convo_handler(bot, update):
     else:
         bot.send_message(
             chat_id=update.message.chat_id,
-            text="tulis /start dong... kita may have baru abis reboot")
+            text="Hi, my system have only just reboot. Please restart the bot! /start")
 
         bot.send_message(
             chat_id=update.message.chat_id,
-            text="first online: " + mainBot.firstOnline)
+            text="First online: " + mainBot.firstOnline)
 
 
 def callback_handler(bot, update):
@@ -414,7 +450,7 @@ def print_seat(bot, update, occ, tom=0):
     for i in range(nSeat):
         occTable.append([seatPrio[i]] * 50)
 
-    seatName.append("seatless")
+    seatName.append("any empty seat")
     occTable.append([0] * 50)
 
     print(occTable)
@@ -456,7 +492,7 @@ def print_seat(bot, update, occ, tom=0):
             print('lol')
             print(seatName[lastTake])
             print(cumLen)
-            soln = "take " + seatName[lastTake] + " for" + str(cumLen) + " blocks"
+            soln = "You can take " + seatName[lastTake] + " for " + str(cumLen) + " blocks"
             print(soln)
 
             bot.send_message(
@@ -465,7 +501,7 @@ def print_seat(bot, update, occ, tom=0):
             lastTake = curBest
             cumLen = 0
 
-    soln = "take " + seatName[lastTake] + " for" + str(cumLen + 1) + " blocks"
+    soln = "You can take " + seatName[lastTake] + " for " + str(cumLen + 1) + " blocks"
     bot.send_message(
         chat_id=chatID,
         text=soln)
@@ -477,6 +513,7 @@ def print_seat(bot, update, occ, tom=0):
             print(occTable[i][j], end=' ')
         print()
 
+
 @run_async
 def callback_prio_set(bot, update, task):
     chatID = update.callback_query.message.chat_id
@@ -487,7 +524,8 @@ def callback_prio_set(bot, update, task):
     elif (task == 'help prio'):
         bot.send_message(
             chat_id=chatID,
-            text='dasar kaw anak ikan gini aja gangerti :v')
+            text=emojize('These numbers indicate the order of your preferred facility to book. \
+                The larger the number, the more you want to chop that facility! :smiley:', use_aliases=True))
     elif (task == 'PC'):
         PC_markup(bot, update)
 
@@ -496,18 +534,18 @@ def PC_markup(bot, update):
     chatID = update.callback_query.message.chat_id
     keyboard = [
         [
-            InlineKeyboardButton(
-                "Single Monitors",
+            InlineKeyboardButton( emojize(
+                "Single Monitors :desktop_computer:", use_aliases=True),
                 callback_data='takepc| (1) Single Monitors')
         ],
         [
-            InlineKeyboardButton(
-                "Dual Monitors",
+            InlineKeyboardButton( emojize(
+                "Dual Monitors :desktop_computer: :desktop_computer:", use_aliases=True),
                 callback_data='takepc|(2) Dual Monitors')
         ],
         [
-            InlineKeyboardButton(
-                "Triple Monitors",
+            InlineKeyboardButton( emojize(
+                "Triple Monitors :desktop_computer: :desktop_computer: :desktop_computer:", use_aliases=True),
                 callback_data='takepc|(3) Triple Monitors'),
         ],
         [
@@ -519,8 +557,10 @@ def PC_markup(bot, update):
     xxx = InlineKeyboardMarkup(keyboard)
     bot.send_message(
             chat_id=chatID,
-            text="Choose your PC",
+            text=emojize("So you want to book PCs?\nPlease choose your PC type :desktop_computer:",
+                use_aliases=True),
             reply_markup=xxx)
+
 
 @run_async
 def change_prio(bot, update):
@@ -560,8 +600,8 @@ def reboot(bot, update):
 def main():
     print('Bot is prepared')
     global mainBot
-    TOKEN = "406125095:AAEiPIwPMdD18XA39VtAplp5L7MdUm0cFEM"
-    # TOKEN = "377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g"
+    # TOKEN = "406125095:AAEiPIwPMdD18XA39VtAplp5L7MdUm0cFEM"
+    TOKEN = "377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g"
     mainBot = ChopeBot(TOKEN)
     mainBot.handle_msg(Filters.text, convo_handler)
     mainBot.handle_cmd('start', start_cmd)

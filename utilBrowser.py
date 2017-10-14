@@ -205,7 +205,7 @@ def try_login(usr, pwd):
     return loginCheck == []
 
 
-# FOR CLASS DEBUGGING PURPOSES
+# FOR CLASS  PURPOSES
 def main():
     bro = ChopeBrowser()
     # usr = input("usr")
