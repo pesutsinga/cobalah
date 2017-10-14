@@ -79,7 +79,7 @@ class ChopeBrowser:
             opt = options[i]
             nextOption = opt
             nextOption.click()
-            self.time_delay(0.05)
+            self.time_delay(0.2)
             # while loadingTitle.visible:
             #     pass
             evFacilities.append(opt.text)
