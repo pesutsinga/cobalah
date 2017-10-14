@@ -3,12 +3,15 @@ from bs4 import BeautifulSoup
 import time
 import pyautogui
 
+
 class ChopeBrowser:
     def __init__(self, headless=False):
         self.chrome = Browser('chrome', headless=headless)
 
     def time_delay(self, time):
-        self.chrome.is_element_present_by_name('!@#$%^&*())(*&^%$#@!', wait_time=time)
+        self.chrome.is_element_present_by_name(
+            '!@#$%^&*())(*&^%$#@!',
+            wait_time=time)
 
     def login(self, usr, pwd, domain='STUDENT'):
         url = 'https://ntupcb.ntu.edu.sg'
@@ -35,10 +38,8 @@ class ChopeBrowser:
             iframe.find_by_id('pnlInsLoc3').click()
         self.type_number(Type)
         data = self.scrape_pc()
-        print(data[0])
 
         can_book = self.book_pc(data[1], data[2])
-        print(can_book)
         self.chrome.quit()
         return data[0], can_book
 
@@ -50,7 +51,9 @@ class ChopeBrowser:
                 if page != []:
                     page = page.html
                     page = BeautifulSoup(page, "lxml")
-                    page = page.find("span", {"style": "display:inline-block;height:20px;width:80px;"})
+                    page = page.find(
+                        "span",
+                        {"style": "display:inline-block;height:20px;width:80px;"})
                     page = page.get_text()
                     if page == Types:
                         page = iframe.find_by_id('pnlInsPcGrp'+str(i)).click()
@@ -63,16 +66,13 @@ class ChopeBrowser:
             for i in range(0, 6):
 
                 for j in range(1, 11):
-                    print(i, j)
-                    idd = 'grdSeating_tblCol' + str(j) + '_' + str(i)
-                    parse = iframe.find_by_id(idd)
-                    print('asafhkakf')
+                    btnID = 'grdSeating_tblCol' + str(j) + '_' + str(i)
+                    parse = iframe.find_by_id(btnID)
                     if parse == []:
                         return 'no pc', 100, 100
                     if parse != []:
-                        warna = self.color(parse.html)
-                        print(warna)
-                        if (warna == '#FFFFFF'):
+                        color = self.color(parse.html)
+                        if (color == '#FFFFFF'):
                             return self.name_pc(parse.html), j, i
         no_pc = 'no pc'
         j = 100
@@ -101,17 +101,13 @@ class ChopeBrowser:
                 try:
                     time.sleep(1)
                     butt = iframe.find_by_id("grdSeating_divOuterCol" + str(col)+"_" + str(row))
-                    print('a')
                     if butt != []:
                         butt.click()
                     time.sleep(1)
-                    print('b')
                     sub = iframe.find_by_name("btnsumit")
                     sub.click()
-                    print('c')
                     return "booked"
                 except:
-                    print('f')
                     pyautogui.press('enter')
                     return "cannot book"
         return "cannot book"
@@ -203,16 +199,3 @@ def try_login(usr, pwd):
     loginCheck = instances.chrome.find_by_id('login')
     instances.quit()
     return loginCheck == []
-
-
-# FOR CLASS  PURPOSES
-def main():
-    bro = ChopeBrowser()
-    # usr = input("usr")
-    # pwd = input("pwd")
-    sol = ChopeBrowser()
-    print(sol)
-
-
-if __name__ == '__main__':
-    main()

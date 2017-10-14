@@ -1,5 +1,4 @@
 import pymysql
-from util import VPrinter
 from Crypto.Cipher import AES
 
 
@@ -30,25 +29,18 @@ class ChopeDB:
             "%f" denotes float
             et cetera.
         """
-        v = VPrinter(True)
-         
         # Create strings to concatenate with with SQL statement
         colName = ', '.join([('`' + elm[0] + '`') for elm in data])
-        # Use vprint() functions several times to check if the desired string is created
-        v.vprint(colName)
         colType = ', '.join([elm[1] for elm in data])
-        v.vprint(colType)
-        
+
         # Create SQL INSERT query
         statement = (
             "INSERT INTO " + table
             + " (" + colName + ") "
             + "VALUES (" + colType + ")")
-        v.vprint(statement)
 
         # Create a tuple of the arguments necessary for query
         args = tuple([elm[2] for elm in data])
-        v.vprint(args)
 
         try:
             # Execute SQL query with separate argument to prevent SQL injection attacks
@@ -59,7 +51,7 @@ class ChopeDB:
             pass
 
     def delete(self, table, condition, values):
-        
+
         """
             table : string of table name
             condition:
@@ -67,12 +59,9 @@ class ChopeDB:
             values : values to replace '%d', '%s', etc.
         """
 
-        v = VPrinter(True)
         statement = (
             "DELETE FROM " + table
             + " WHERE " + condition)
-        v.vprint(statement)
-
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute(statement, values)
@@ -94,17 +83,6 @@ class ChopeDB:
         value2: value to search in requireCol
         """
 
-        v = VPrinter(True)
-
-        colName1 = ', '.join([('`' + elm[0] + '`') for elm in data])
-        v.vprint(colName1)
-        colType1 = ', '.join([(elm[1]) for elm in data])
-        v.vprint(colType1)
-        colName2 = ', '.join([('`' + elm[3] + '`') for elm in data])
-        v.vprint(colName2)
-        colType2 = ', '.join([(elm[4]) for elm in data])
-        v.vprint(colType2)
-
         for elm in data:
             statement = (
                 "UPDATE " + table
@@ -112,9 +90,7 @@ class ChopeDB:
                 + " = " + elm[1]
                 + " WHERE " + elm[3]
                 + " = " + elm[4])
-            v.vprint(statement)
             args = [elm[2]] + [elm[5]]
-            v.vprint(args)
 
             try:
                 with self.connection.cursor() as cursor:
@@ -133,41 +109,36 @@ class ChopeDB:
         colSelect: list of columns to be selected
         targetVariables: A list to store all the selected data
         (a value returned to the main program)
-                      
-        """
 
-        v = VPrinter(True)
+        """
 
         # Initialization for various counter/loop control variables
         deletChar = "[]\'"
         Count = len(data)
         targetVariables = []
-        
+
         # Loop to create multiple queries based on the number of tuples in data
         for i in range(Count):
             elm = data[i]
             FieldNameStr = str(elm[3])
-            
+
             # Replace characters from FieldNameStr before concatenation so it follows SQL syntax
             for char in deletChar:
                 FieldNameStr = FieldNameStr.replace(char, " ")
 
-            # Prepare SQL SELECT query    
+            # Prepare SQL SELECT query
             statement = (
                 "SELECT " + FieldNameStr
                 + " FROM " + table
                 + " WHERE " + elm[0]
                 + " = " + elm[1] + "")
-            v.vprint(statement)
             args = elm[2]
-            v.vprint(args)
 
             try:
                 with self.connection.cursor() as cursor:
                     cursor.execute(statement, args)
                 results = cursor.fetchall()
-                # print(results)
-                
+
                 # Store selected information into targetVariables
                 for row in results:
                     for j in range(len(row)):
@@ -213,7 +184,7 @@ def set_username(tgUsername, username):
     db = ChopeDB()
 
     targetVariables = SelectList = []
-     
+
     """
     Check if the user's Telegram Username exists in database
     If it does, update user's NTU username
@@ -223,8 +194,7 @@ def set_username(tgUsername, username):
     SelectList.append(("TELEGRAMID", "%s", tgUsername, "TELEGRAMID"))
 
     targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
-    print(targetVariables)
-    
+
     if targetVariables == []:
         InsertList = []
         InsertList.append(("TELEGRAMID", '%s', tgUsername))
@@ -247,7 +217,7 @@ def set_password(tgUsername, password, chatID):
     encryptKey = str(chatID)
     while len(encryptKey) < 16:
         encryptKey = encryptKey + "]"
-    
+
     obj = AES.new(encryptKey, AES.MODE_CFB, 'This is an IV456')
     encryptedPass = obj.encrypt(password)
 
@@ -256,7 +226,6 @@ def set_password(tgUsername, password, chatID):
     SelectList.append(("TELEGRAMID", "%s", tgUsername, "TELEGRAMID"))
 
     targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
-    print(targetVariables)
 
     if targetVariables == []:
         InsertList = []
@@ -276,13 +245,11 @@ def set_prio(tgUsername, seatName='', value=0):
     # Order of priority column in this parameter is based on their order in db
 
     db = ChopeDB()
-    print(seatName, value)
     targetVariables = SelectList = []
 
     SelectList.append(("TELEGRAMID", "%s", tgUsername, "TELEGRAMID"))
 
     targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
-    print(targetVariables)
 
     if targetVariables == []:
         return False
@@ -324,7 +291,6 @@ def get_password(tgUsername, chatID):
     SelectList = [("TELEGRAMID", "%s", tgUsername, "PASSWORD")]
     targetVariables = db.select("LIBCHOP", targetVariables, SelectList)
 
-    print(targetVariables)
     if targetVariables == []:
         return ""
     else:
@@ -344,17 +310,3 @@ def get_prio(tgUsername):
     Priority = db.select_dict(tgUsername)
     db.close()
     return Priority
-
-
-def main():
-    """Testing purposes"""
-    set_prio("thisistgid", 5, 4, 3, 2, 1)
-    set_username("anewTelegID", "anewUname")
-    strPassword = get_password("inidatabarulho", 435353678)
-    print(strPassword)
-    print(type(strPassword))
-    set_password("inidatabarulho", "waaahhhhhhhhhh", 435353678)
-
-
-if __name__ == '__main__':
-    main()

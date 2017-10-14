@@ -32,7 +32,6 @@ class ChopeBot:
         self.add(callbackHandler)
 
     def ask(self, bot, update, question, func):
-        print("ini di ask kok")
         bot.send_message(
             chat_id=update.message.chat_id,
             text=question)

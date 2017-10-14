@@ -15,7 +15,7 @@ import time
 import utilBrowser
 import utilDB
 
-
+# Declaration of GLOBALS
 LIST_OF_ADMINS = [412231900]
 START_TIME = {}
 END_TIME = {}
@@ -25,6 +25,7 @@ PC_TYPE = {}
 mainBot = None
 
 
+# function that restrict user from admin controls
 def restricted(func):
     @wraps(func)
     def wrapped(bot, update, *args, **kwargs):
@@ -36,13 +37,7 @@ def restricted(func):
     return wrapped
 
 
-def parrot(bot, update):
-    print(update)
-    bot.send_message(
-        chat_id=update.message.chat_id,
-        text=update.message.text)
-
-
+# check if tgusername exist for the bot
 def tgusername_check(bot, update):
     username = update.message.from_user.username
     if username is not None:
@@ -53,8 +48,10 @@ def tgusername_check(bot, update):
 @run_async
 def ask_username(bot, update):
     global mainBot
-    mainBot.ask(bot, update, emojize("To assist you, I will need your NTU account details! First of all, please type in your NTU account username :keyboard:",
-                                      use_aliases=True), ans_username)
+    mainBot.ask(
+        bot, update,
+        emojize("To assist you, I will need your NTU account details! First of all, please type in your NTU account username :keyboard:",
+        use_aliases=True), ans_username)
 
 
 @run_async
@@ -77,7 +74,6 @@ def ask_password(bot, update):
 @run_async
 def ans_password(bot, update):
     global mainBot
-    print('huehuehue')
     utilDB.set_password(
         tgUsername=update.message.from_user.username,
         password=update.message.text,
@@ -87,7 +83,6 @@ def ans_password(bot, update):
 
 @run_async
 def ask_start_chope(bot, update, callback=False):
-    print("lsdkfsdf'")
     if callback:
         chatID = update.callback_query.message.chat_id
     else:
@@ -106,12 +101,11 @@ def ans_start_chope(bot, update):
     strTime = strTime.strip(' ')
     strTime = strTime.split(':')
     try:
-        print(strTime)
         hour = int(strTime[0])
         minute = int(strTime[1])
-        if not (9 <= hour < 21):
-            print(1/0)
-        if not (0 <= minute < 60):
+
+        # NTU Library only open from 9am to pm
+        if (8, 30) <= (hour, minute) <= (20, 30):
             print(1/0)
         START_TIME[update.message.chat_id] = update.message.text.strip(' ')
         ask_end_chope(bot, update)
@@ -135,9 +129,7 @@ def ans_end_chope(bot, update):
     try:
         hour = int(strTime[0])
         minute = int(strTime[1])
-        if not (9 <= hour < 21):
-            print(1/0)
-        if not (0 <= minute < 60):
+        if (8, 30) <= (hour, minute) <= (20, 30):
             print(1/0)
         END_TIME[update.message.chat_id] = update.message.text.strip(' ')
         ask_captcha(bot, update, 1, None, False)
@@ -167,26 +159,20 @@ def ask_captcha(bot, update, bookingType=None, pcType=None, callback=False):
     if bookingType == 1:
         msgLower = update.message.text.lower()
         solnLower = str(mainBot.get_captcha_solution(chatID)).lower()
-        print()
-        print("asdfa")
         if msgLower == solnLower:
-            print("asalll")
             bot.send_message(
                 chat_id=chatID,
                 text=emojize("Checking seats....this may take around 2 minutes. Please be patient!:sleeping:", use_aliases=True))
-            print(str(datetime.now()))
-            occupied = check_seat(update.message.from_user.username, chatID)
             mainBot.set_phase(chatID, None)
+            occupied = check_seat(update.message.from_user.username, chatID)
             print_seat(bot, update, occupied)
             return
+
     if bookingType == 2:
-        print('asdasaaa')
 
         bot.send_message(
                 chat_id=chatID,
                 text="Please wait...")
-        print("okaaay")
-        print(update.callback_query.from_user.username)
         mainBot.set_phase(chatID, None)
         check_pc(bot, update, update.callback_query.from_user.username, chatID, pcType)
         return
@@ -205,10 +191,10 @@ def ask_captcha(bot, update, bookingType=None, pcType=None, callback=False):
 
 
 def check_pc(bot, update, tgUsername, chatID, pcType):
-    print(tgUsername)
+
     usr = utilDB.get_username(tgUsername)
     pwd = utilDB.get_password(tgUsername, chatID)
-    print(usr)
+
     instances = utilBrowser.ChopeBrowser()
     result = instances.pc_setup(usr, pwd, pcType)
     if result[1] == 'booked':
@@ -235,7 +221,6 @@ def check_seat(tgUsername, chatID):
     occupied = instances.scrape_seats(usr, pwd)
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(occupied)
-    print(str(datetime.now()))
     return occupied
 
 
@@ -357,7 +342,6 @@ def convo_handler(bot, update):
 def callback_handler(bot, update):
     global mainBot
     callbackData = update.callback_query.data
-    print(callbackData)
     data = callbackData.split('|', 1)
     if (data[0] == 'callback_prio_set'):
         callback_prio_set(bot, update, data[1])
@@ -395,15 +379,9 @@ def callback_handler(bot, update):
 
 
 def enc_time(time):
-    print('time')
-    print(time)
     time = time.split(':')
-    print(time)
     hour = int(time[0])
-    print(hour)
     minute = int(time[1])
-    print(minute)
-    print(hour, minute)
     return 2 * hour + minute // 30
 
 
@@ -453,47 +431,30 @@ def print_seat(bot, update, occ, tom=0):
     seatName.append("any empty seat")
     occTable.append([0] * 50)
 
-    print(occTable)
-
-    print('hololo')
-    for i in range(nSeat):
-        print(seatName[i])
-        print(seatOcc[i])
-
     for i in range(nSeat):
         seat = seatOcc[i]
-        print(seat)
         for dura in seat:
-            print(dura)
             st = enc_time(dura[0])
             en = enc_time(dura[1])
-            print(st, en)
             for k in range(st, en):
                 occTable[i][k] = 0
 
     stTime = enc_time(START_TIME[chatID])
     enTime = enc_time(END_TIME[chatID])
 
-    print('horehorehore123123123')
     lastTake = nSeat
     cumLen = -1
     for j in range(stTime, enTime):
         curBest = nSeat
         cumLen += 1
         for i in range(nSeat):
-            print('slelskdf')
             if occTable[i][j] >= occTable[curBest][j]:
                 curBest = i
 
-        print(curBest)
         if lastTake != curBest:
             if cumLen == 0:
                 continue
-            print('lol')
-            print(seatName[lastTake])
-            print(cumLen)
             soln = "You can take " + seatName[lastTake] + " for " + str(cumLen) + " blocks"
-            print(soln)
 
             bot.send_message(
                 chat_id=chatID,
@@ -505,13 +466,6 @@ def print_seat(bot, update, occ, tom=0):
     bot.send_message(
         chat_id=chatID,
         text=soln)
-
-    print('horhorhor')
-
-    for j in range(stTime, enTime):
-        for i in range(nSeat):
-            print(occTable[i][j], end=' ')
-        print()
 
 
 @run_async
@@ -554,12 +508,12 @@ def PC_markup(bot, update):
                 callback_data='takepc|Curved Monitors')
         ]
     ]
-    xxx = InlineKeyboardMarkup(keyboard)
+    kbMarkup = InlineKeyboardMarkup(keyboard)
     bot.send_message(
             chat_id=chatID,
             text=emojize("So you want to book PCs?\nPlease choose your PC type :desktop_computer:",
                 use_aliases=True),
-            reply_markup=xxx)
+            reply_markup=kbMarkup)
 
 
 @run_async
@@ -598,9 +552,15 @@ def reboot(bot, update):
 
 
 def main():
-    print('Bot is prepared')
+    print('please try this bot with only student domain user')
+    print('and run this program in ntu environment to access ntufbs')
+    print('run the bot ?: [Y/n]')
+    run = input()
+    if run.lower() != 'y':
+        return
+
     global mainBot
-    # TOKEN = "406125095:AAEiPIwPMdD18XA39VtAplp5L7MdUm0cFEM"
+    print('Bot is prepared')
     TOKEN = "377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g"
     mainBot = ChopeBot(TOKEN)
     mainBot.handle_msg(Filters.text, convo_handler)
