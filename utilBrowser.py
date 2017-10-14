@@ -29,7 +29,7 @@ class ChopeBrowser:
         self.login(usr, pwd)
         button = self.chrome.find_by_id('tdPcBook')
         button.click()
-        time.sleep(1)
+        time.sleep(2)
         with self.chrome.get_iframe('frmAdminViewControls') as iframe:
             iframe.find_by_id('pnlInsLoc3').click()
         self.type_number(Type)
@@ -38,10 +38,11 @@ class ChopeBrowser:
 
         can_book = self.book_pc(data[1], data[2])
         print(can_book)
+        self.chrome.quit()
         return data[0], can_book
 
     def type_number(self, Types):
-        for i in range(0, 5):
+        for i in range(4):
             with self.chrome.get_iframe('frmAdminViewControls') as iframe:
                 page = iframe.find_by_id('pnlInsPcGrp'+str(i))
                 if page != []:
@@ -51,7 +52,7 @@ class ChopeBrowser:
                     page = page.get_text()
                     if page == Types:
                         page = iframe.find_by_id('pnlInsPcGrp'+str(i)).click()
-                    return 0
+        return 0
 
     def scrape_pc(self):
         with self.chrome.get_iframe('frmSeating') as iframe:
@@ -189,7 +190,6 @@ def main():
     # pwd = input("pwd")
     sol = ChopeBrowser()
     # sol.login('echristo001', "Sayaanakrajin!2")
-    sol.pc_setup('echristo001', "Sayaanakrajin!2", " (1) Single Monitors")
     print(sol)
 
 

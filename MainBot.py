@@ -6,7 +6,6 @@ from captcha.image import ImageCaptcha
 from datetime import datetime
 from functools import wraps
 from io import BytesIO
-from math import floor, ceil
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters
 from telegram.ext.dispatcher import run_async
@@ -50,12 +49,12 @@ def tgusername_check(bot, update):
         return True
     return False
 
-
+@run_async
 def ask_username(bot, update):
     global mainBot
     mainBot.ask(bot, update, "Your NTU Username ?", ans_username)
 
-
+@run_async
 def ans_username(bot, update):
     global mainBot
     utilDB.set_username(
@@ -63,12 +62,12 @@ def ans_username(bot, update):
         username=update.message.text)
     ask_password(bot, update)
 
-
+@run_async
 def ask_password(bot, update):
     global mainBot
     mainBot.ask(bot, update, "Your NTU Password ?", ans_password)
 
-
+@run_async
 def ans_password(bot, update):
     global mainBot
     print('huehuehue')
@@ -76,10 +75,9 @@ def ans_password(bot, update):
         tgUsername=update.message.from_user.username,
         password=update.message.text,
         chatID=update.message.chat_id)
-    print('slds')
     start_cmd(bot, update)
 
-
+@run_async
 def ask_start_chope(bot, update, callback=False):
     print("lsdkfsdf'")
     if callback:
@@ -94,6 +92,7 @@ def ask_start_chope(bot, update, callback=False):
     mainBot.set_phase(chatID, ans_start_chope)
 
 
+@run_async
 def ans_start_chope(bot, update):
     strTime = update.message.text
     strTime = strTime.strip(' ')
@@ -111,12 +110,12 @@ def ans_start_chope(bot, update):
     except:
         ask_start_chope(bot, update)
 
-
+@run_async
 def ask_end_chope(bot, update):
     global mainBot
     mainBot.ask(bot, update, "until  HH:MM ?", ans_end_chope)
 
-
+@run_async
 def ans_end_chope(bot, update):
     strTime = update.message.text
     strTime = strTime.strip(' ')
@@ -129,32 +128,43 @@ def ans_end_chope(bot, update):
         if not (0 <= minute < 60):
             print(1/0)
         END_TIME[update.message.chat_id] = update.message.text.strip(' ')
-        ask_captcha(bot, update)
+        ask_captcha(bot, update, 1, None)
     except:
         ask_end_chope(bot, update)
 
-
-def ask_captcha(bot, update):
+@run_async
+def ask_captcha(bot, update, numnum, pctype, callback=False):
     global mainBot
-    chatID = update.message.chat_id
-    mainBot.set_phase(chatID, ask_captcha)
-    msgLower = update.message.text.lower()
-    solnLower = str(mainBot.get_captcha_solution(chatID)).lower()
-    print()
-    solnLower = msgLower
-    if msgLower == solnLower:
+    if numnum == 1:
+        chatID = update.message.chat_id
+        msgLower = update.message.text.lower()
+        solnLower = str(mainBot.get_captcha_solution(chatID)).lower()
+        print()
+        print("asdfa")
+        if msgLower == solnLower:
+            print("asalll")
+            bot.send_message(
+                chat_id=chatID,
+                text="please wait, be calm, this may take 2 min")
+            print(str(datetime.now()))
+            occupied = check_seat(update.message.from_user.username, chatID)
+            print_seat(bot, update, occupied)
+            return
+    if numnum == 2:
+        print('asdasaaa')
+        chatID = update.callback_query.message.chat_id
         bot.send_message(
-            chat_id=chatID,
-            text="please wait, be calm, this may take 2 min")
-        print(str(datetime.now()))
-        occupied = check_seat(update.message.from_user.username, chatID)
-        prisya(bot, update, occupied)
+                chat_id=chatID,
+                text="please wait")
+        print("okaaay")
+        print(update.callback_query.from_user.username)
+        check_pc(bot, update, update.callback_query.from_user.username, chatID, pctype)
         return
-
     image = ImageCaptcha(
         fonts=['fonts/captcha.ttf'])
     unambiguousChars = '23456789abcdefghkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'
     randStr = ''.join(random.choice(unambiguousChars) for _ in range(6))
+    mainBot.set_captcha_solution(chatID, randStr)
     data = image.generate(randStr)
     assert isinstance(data, BytesIO)
     image.write(randStr, 'curCaptcha.png')
@@ -162,7 +172,19 @@ def ask_captcha(bot, update):
     mainBot.set_phase(chatID, ask_captcha)
     bot.send_photo(chat_id=chatID, photo=open('curCaptcha.png', 'rb'))
     bot.send_message(chat_id=chatID, text="please write the captcha")
-    mainBot.set_captcha_solution(chatID, randStr)
+
+
+def check_pc(bot, update, tgUsername, chatID, pctype):
+    print(tgUsername)
+    usr = utilDB.get_username(tgUsername)
+    pwd = utilDB.get_password(tgUsername, chatID)
+    print(usr)
+    instances = utilBrowser.ChopeBrowser()
+    result = instances.pc_setup(usr, pwd, pctype)
+    if result[1] == 'booked':
+        bot.send_message(chat_id=chatID, text="Successfully booked, this is your seat: " + result[0])
+    else:
+        bot.send_message(chat_id=chatID, text="Cannot book")
 
 
 def login_check(bot, update):
@@ -184,7 +206,7 @@ def check_seat(tgUsername, chatID):
     print(str(datetime.now()))
     return occupied
 
-
+@run_async
 def start_cmd(bot, update):
     global mainBot
     chatID = update.message.chat_id
@@ -333,8 +355,7 @@ def callback_handler(bot, update):
             text=update.callback_query.message.text,
             reply_markup=reply_markup)
     elif (data[0] == 'takepc'):
-        utilBrowser.ChopeBrowser().pc_setup(data[1])
-
+        ask_captcha(bot, update, 2, data[1], True)
 
 
 def enc_time(time):
@@ -348,113 +369,6 @@ def enc_time(time):
     print(minute)
     print(hour, minute)
     return 2 * hour + minute // 30
-
-
-def prisya(bot, update, occ, tom=0):
-    chatID = update.message.chat_id
-    occLen = len(occ)
-    nSeat = occLen // 2
-
-    tgUsername = update.message.from_user.username
-    castePrio = utilDB.get_prio(tgUsername)
-    casteName = [
-        "Circular Pods",
-        "Collab Booths",
-        "Learning Pods",
-        "Recording Room",
-        "Video Conferencing Room"]
-
-    seatName = [occ[i] for i in range(0, occLen, 2)]
-
-    seatType = []
-    seatType.extend([0] * 2)
-    seatType.extend([1] * 12)
-    seatType.extend([0] * 1)
-    seatType.extend([2] * 6)
-    seatType.extend([4] * 1)
-    seatType.extend([3] * 1)
-    seatType.extend([0] * 2)
-
-    seatPrio = [castePrio[casteName[seat].upper().replace(' ', '_')] for seat in seatType]
-
-    for i in range(nSeat):
-        print(seatName[i], casteName[seatType[i]], seatPrio[i])
-
-    seatOcc = [occ[i] for i in range(1, occLen, 2)]
-
-    today = datetime.now().weekday()
-    # nnt hapus
-    today -= 1
-
-    for i in range(nSeat):
-        seatOcc[i] = seatOcc[i][today]
-
-    occTable = []
-    for i in range(nSeat):
-        occTable.append([seatPrio[i]] * 50)
-
-    seatName.append("seatless")
-    occTable.append([0] * 50)
-
-    print(occTable)
-
-    print('hololo')
-    for i in range(nSeat):
-        print(seatName[i])
-        print(seatOcc[i])
-
-    for i in range(nSeat):
-        seat = seatOcc[i]
-        print(seat)
-        for dura in seat:
-            print(dura)
-            st = enc_time(dura[0])
-            en = enc_time(dura[1])
-            print(st, en)
-            for k in range(st, en):
-                occTable[i][k] = 0
-
-    stTime = enc_time(START_TIME[chatID])
-    enTime = enc_time(END_TIME[chatID])
-
-    print('horehorehore123123123')
-    lastTake = nSeat
-    cumLen = -1
-    for j in range(stTime, enTime):
-        curBest = nSeat
-        cumLen += 1
-        for i in range(nSeat):
-            print('slelskdf')
-            if occTable[i][j] >= occTable[curBest][j]:
-                curBest = i
-
-        print(curBest)
-        if lastTake != curBest:
-            if cumLen == 0:
-                continue
-            print('lol')
-            print(seatName[lastTake])
-            print(cumLen)
-            soln = "take " + seatName[lastTake] + " for" + str(cumLen) + " blocks"
-            print(soln)
-
-            bot.send_message(
-                chat_id=chatID,
-                text=soln)
-            lastTake = curBest
-            cumLen = 0
-
-    soln = "take " + seatName[lastTake] + " for" + str(cumLen + 1) + " blocks"
-    bot.send_message(
-        chat_id=chatID,
-        text=soln)
-
-    print('horhorhor')
-
-    for j in range(stTime, enTime):
-        for i in range(nSeat):
-            print(occTable[i][j], end=' ')
-        print()
 
 
 def print_seat(bot, update, occ, tom=0):
@@ -563,7 +477,7 @@ def print_seat(bot, update, occ, tom=0):
             print(occTable[i][j], end=' ')
         print()
 
-
+@run_async
 def callback_prio_set(bot, update, task):
     chatID = update.callback_query.message.chat_id
     if (task == 'change prio'):
@@ -583,22 +497,22 @@ def PC_markup(bot, update):
     keyboard = [
         [
             InlineKeyboardButton(
-                "Change prio",
+                "Single Monitors",
                 callback_data='takepc| (1) Single Monitors')
         ],
         [
             InlineKeyboardButton(
-                "Accept prio",
+                "Dual Monitors",
                 callback_data='takepc|(2) Dual Monitors')
         ],
         [
             InlineKeyboardButton(
-                "What does the number mean",
+                "Triple Monitors",
                 callback_data='takepc|(3) Triple Monitors'),
-        ]
+        ],
         [
             InlineKeyboardButton(
-                "PC booking",
+                "Curved Monitors",
                 callback_data='takepc|Curved Monitors')
         ]
     ]
@@ -608,7 +522,7 @@ def PC_markup(bot, update):
             text="Choose your PC",
             reply_markup=xxx)
 
-
+@run_async
 def change_prio(bot, update):
     chatID = update.callback_query.message.chat_id
 
@@ -650,7 +564,6 @@ def main():
     # TOKEN = "377140861:AAEiMIj-VOwB68HcftvMILjr5wc6LJJml6g"
     mainBot = ChopeBot(TOKEN)
     mainBot.handle_msg(Filters.text, convo_handler)
-    mainBot.handle_cmd('prisya', prisya)
     mainBot.handle_cmd('start', start_cmd)
     mainBot.handle_cmd('changeusername', ask_username)
     mainBot.handle_cmd('prio', prio_cmd)
