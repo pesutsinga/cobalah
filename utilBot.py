@@ -1,12 +1,12 @@
 from telegram.ext import CallbackQueryHandler
 from telegram.ext import CommandHandler, MessageHandler
 from telegram.ext import Updater
-from time import gmtime, strftime
+from time import localtime, strftime
 
 
 class ChopeBot:
     def __init__(self, token):
-        self.firstOnline = strftime("%d %b %Y %H:%M:%S", gmtime()) + "GMT"
+        self.firstOnline = strftime("%d %b %Y %H:%M:%S", localtime())
         self.updater = Updater(token=token)
         self.dispatcher = self.updater.dispatcher
         self.userPhase = {}
