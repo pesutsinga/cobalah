@@ -465,7 +465,7 @@ def print_seat(bot, update, occ, tom=0):
         if lastTake != curBest:
             if cumLen == 0:
                 continue
-            soln = "You can take " + seatName[lastTake] + " for " + str(cumLen) + " blocks"
+            soln = "You can take " + seatName[lastTake] + " for " + str(cumLen) + " x 30mins"
 
             bot.send_message(
                 chat_id=chatID,
@@ -473,7 +473,7 @@ def print_seat(bot, update, occ, tom=0):
             lastTake = curBest
             cumLen = 0
 
-    soln = "You can take " + seatName[lastTake] + " for " + str(cumLen + 1) + " blocks"
+    soln = "You can take " + seatName[lastTake] + " for " + str(cumLen + 1) + " x 30mins"
     bot.send_message(
         chat_id=chatID,
         text=soln)
