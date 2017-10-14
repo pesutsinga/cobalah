@@ -25,6 +25,7 @@ class ChopeBrowser:
 
 
 # PC BOOKING STARTS HERE
+    # Tries to book the PC of selected type
     def pc_setup(self, usr, pwd, Type):
         self.login(usr, pwd)
         button = self.chrome.find_by_id('tdPcBook')
@@ -41,6 +42,7 @@ class ChopeBrowser:
         self.chrome.quit()
         return data[0], can_book
 
+    # identify pc type requested
     def type_number(self, Types):
         for i in range(0, 4):
             with self.chrome.get_iframe('frmAdminViewControls') as iframe:
@@ -55,6 +57,7 @@ class ChopeBrowser:
                         return
         return 0
 
+    # Scrape all PC in the current screen
     def scrape_pc(self):
         with self.chrome.get_iframe('frmSeating') as iframe:
             for i in range(0, 6):
@@ -76,11 +79,13 @@ class ChopeBrowser:
         i = 100
         return no_pc, j, i
 
+    # Identify name of PC
     def name_pc(self, codes):
         soup = BeautifulSoup(codes, "lxml")
         mydivs = soup.findAll("span", {"class": "lblPcName"})
         return mydivs[0].get_text()
 
+    # Check availability of PC, by detecting background color
     def color(self, code):
         soup = BeautifulSoup(code, "lxml")
         tag = soup.findAll('td', {"style": "background-color: #FFFFFF"})
@@ -89,6 +94,7 @@ class ChopeBrowser:
         else:
             return 'blabla'
 
+    # Try to book the selected PC
     def book_pc(self, col, row):
         with self.chrome.get_iframe('frmSeating') as iframe:
             if (col != 100) and (row != 100):
@@ -110,6 +116,7 @@ class ChopeBrowser:
                     return "cannot book"
         return "cannot book"
 
+    # Initialize booking site until arriving to the booking table
     def first_setup(self):
         button = self.chrome.find_by_id('tdFacilityBook')
         button.click()
@@ -121,6 +128,7 @@ class ChopeBrowser:
         self.chrome.click_link_by_href('#-1')
         self.chrome.click_link_by_id('book')
 
+    # Eliminates unnecessary booking slots
     def is_registered(event):
         if event.has_class('noShowWhite'):
             return False
@@ -128,6 +136,9 @@ class ChopeBrowser:
             return False
         return True
 
+    # Adds weekly booked slots for selected facility
+    # Each list of weekly bookings contain list of daily bookings
+    # each containing lists booked slots, determined by start and end time
     def check_facility(self, evFacilities):
         columnWeek = self.chrome.find_by_css('.wc-event-column')
         evWeek = []
@@ -146,8 +157,8 @@ class ChopeBrowser:
         evFacilities.append(evWeek)
 
     def click_next(self, counter, evFacilities):
-        # Kerja rekursif dengan check_facility.
-        # Milih option facility berdasarkan counter.
+        # Recursively check facilities.
+        # Choose facility based on counter
         dropdown = self.chrome.find_by_id('ResourceId')
         options = dropdown.find_by_tag('option')
         if counter < len(options):
@@ -157,6 +168,7 @@ class ChopeBrowser:
         else:
             return evFacilities
 
+    # Scrape seats main function
     def scrape_seats(self, usr, pwd):
         self.login(usr, pwd)
         self.first_setup()
@@ -179,6 +191,7 @@ class ChopeBrowser:
     def quit(self):
         self.chrome.quit()
 
+
 def try_login(usr, pwd):
     # return True    # TODO: REMOVE THIS DEBUG
     instances = ChopeBrowser()
@@ -192,12 +205,12 @@ def try_login(usr, pwd):
     return loginCheck == []
 
 
+# FOR CLASS DEBUGGING PURPOSES
 def main():
     bro = ChopeBrowser()
     # usr = input("usr")
     # pwd = input("pwd")
     sol = ChopeBrowser()
-    # sol.login('echristo001', "Sayaanakrajin!2")
     print(sol)
 
 
