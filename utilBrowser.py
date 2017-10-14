@@ -1,5 +1,7 @@
 from splinter import Browser
-
+from bs4 import BeautifulSoup
+import time
+import pyautogui
 
 class ChopeBrowser:
     def __init__(self, headless=False):
@@ -20,6 +22,84 @@ class ChopeBrowser:
 
         self.chrome.fill('Username', usr)
         self.chrome.fill('Password', pwd + '\n')
+
+
+# PC BOOKING STARTS HERE
+    def pc_setup(self, usr, pwd, Type):
+        self.login(usr, pwd)
+        button = self.chrome.find_by_id('tdPcBook')
+        button.click()
+        time.sleep(1)
+        with self.chrome.get_iframe('frmAdminViewControls') as iframe:
+            iframe.find_by_id('pnlInsLoc3').click()
+        self.type_number(Type)
+        data = self.scrape_pc()
+        print(data[0])
+
+        can_book = self.book_pc(data[1], data[2])
+        print(can_book)
+        return data[0], can_book
+
+    def type_number(self, Types):
+        for i in range(0, 5):
+            with self.chrome.get_iframe('frmAdminViewControls') as iframe:
+                page = iframe.find_by_id('pnlInsPcGrp'+str(i))
+                if page != []:
+                    page = page.html
+                    page = BeautifulSoup(page, "lxml")
+                    page = page.find("span", {"style": "display:inline-block;height:20px;width:80px;"})
+                    page = page.get_text()
+                    if page == Types:
+                        page = iframe.find_by_id('pnlInsPcGrp'+str(i)).click()
+                    return 0
+
+    def scrape_pc(self):
+        with self.chrome.get_iframe('frmSeating') as iframe:
+            for i in range(0, 6):
+                for j in range(1, 11):
+                    idd = 'grdSeating_tblCol' + str(j) + '_' + str(i)
+                    parse = iframe.find_by_id(idd)
+                    if parse == []:
+                        return 'no pc', 100, 100
+                        break
+                    if parse != []:
+                        warna = self.color(parse.html)
+                    if (warna == '#FFFFFF'):
+                        return self.name_pc(parse.html), j, i
+        no_pc = 'no pc'
+        j = 100
+        i = 100
+        return no_pc, j, i
+
+    def name_pc(self, codes):
+        soup = BeautifulSoup(codes, "lxml")
+        mydivs = soup.findAll("span", {"class": "lblPcName"})
+        return mydivs[0].get_text()
+
+    def color(self, code):
+        soup = BeautifulSoup(code, "lxml")
+        tag = soup.findAll('td', {"style": "background-color: #FFFFFF"})
+        if tag != []:
+            return '#FFFFFF'
+        else:
+            return 'blabla'
+
+    def book_pc(self, col, row):
+        with self.chrome.get_iframe('frmSeating') as iframe:
+            if (col != 100) and (row != 100):
+                try:
+                    time.sleep(1)
+                    butt = iframe.find_by_id("grdSeating_divOuterCol" + str(col)+"_" + str(row))
+                    if butt != []:
+                        butt.click()
+                    time.sleep(1)
+                    sub = iframe.find_by_name("btnsumit")
+                    sub.click()
+                    return "booked"
+                except:
+                    pyautogui.press('enter')
+                    return "cannot book"
+        return "cannot book"
 
     def first_setup(self):
         button = self.chrome.find_by_id('tdFacilityBook')
@@ -90,7 +170,6 @@ class ChopeBrowser:
     def quit(self):
         self.chrome.quit()
 
-
 def try_login(usr, pwd):
     # return True    # TODO: REMOVE THIS DEBUG
     instances = ChopeBrowser()
@@ -106,9 +185,11 @@ def try_login(usr, pwd):
 
 def main():
     bro = ChopeBrowser()
-    usr = input("usr")
-    pwd = input("pwd")
-    sol = bro.scrape_seats(usr, pwd)
+    # usr = input("usr")
+    # pwd = input("pwd")
+    sol = ChopeBrowser()
+    # sol.login('echristo001', "Sayaanakrajin!2")
+    sol.pc_setup('echristo001', "Sayaanakrajin!2", " (1) Single Monitors")
     print(sol)
 
 
