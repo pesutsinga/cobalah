@@ -1,6 +1,7 @@
 from splinter import Browser
 from bs4 import BeautifulSoup
 import time
+import pyautogui
 
 class ChopeBrowser:
     def __init__(self, headless=False):
@@ -24,7 +25,8 @@ class ChopeBrowser:
 
 
 # PC BOOKING STARTS HERE
-    def pc_setup(self, Type):
+    def pc_setup(self, usr, pwd, Type):
+        self.login(usr, pwd)
         button = self.chrome.find_by_id('tdPcBook')
         button.click()
         time.sleep(1)
@@ -33,8 +35,10 @@ class ChopeBrowser:
         self.type_number(Type)
         data = self.scrape_pc()
         print(data[0])
-        print(data[1], data[2])
-        print(self.book_pc(data[1], data[2]))
+
+        can_book = self.book_pc(data[1], data[2])
+        print(can_book)
+        return data[0], can_book
 
     def type_number(self, Types):
         for i in range(0, 5):
@@ -85,20 +89,15 @@ class ChopeBrowser:
             if (col != 100) and (row != 100):
                 try:
                     time.sleep(1)
-                    print('a')
                     butt = iframe.find_by_id("grdSeating_divOuterCol" + str(col)+"_" + str(row))
                     if butt != []:
                         butt.click()
-                    print('a')
-                    time.sleep(2)
+                    time.sleep(1)
                     sub = iframe.find_by_name("btnsumit")
-                    print('a')
                     sub.click()
-                    print('a')
                     return "booked"
                 except:
-                    time.sleep(0.5)
-                    self.chrome.fill('\n')
+                    pyautogui.press('enter')
                     return "cannot book"
         return "cannot book"
 
@@ -189,8 +188,8 @@ def main():
     # usr = input("usr")
     # pwd = input("pwd")
     sol = ChopeBrowser()
-    sol.login('echristo001', "Sayaanakrajin!2")
-    sol.pc_setup(" (1) Single Monitors")
+    # sol.login('echristo001', "Sayaanakrajin!2")
+    sol.pc_setup('echristo001', "Sayaanakrajin!2", " (1) Single Monitors")
     print(sol)
 
 
