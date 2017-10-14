@@ -165,6 +165,8 @@ class ChopeBrowser:
             return evFacilities
 
     # Scrape seats main function
+    # OPTIMIZE: by multithreading
+    #           and by runnnig multiple browser at once
     def scrape_seats(self, usr, pwd):
         self.login(usr, pwd)
         self.first_setup()

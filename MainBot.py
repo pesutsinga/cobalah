@@ -1,12 +1,13 @@
 from captcha.image import ImageCaptcha
 from datetime import datetime
+from emoji import emojize
 from functools import wraps
 from io import BytesIO
+from math import ceil
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters
 from telegram.ext.dispatcher import run_async
 from utilBot import ChopeBot
-from emoji import emojize
 import os
 import pprint
 import random
@@ -100,12 +101,14 @@ def ans_start_chope(bot, update):
     strTime = update.message.text
     strTime = strTime.strip(' ')
     strTime = strTime.split(':')
+
+    # try to mitigate strTime[0] and strTime[1] isn't int encoded in a string
     try:
         hour = int(strTime[0])
         minute = int(strTime[1])
 
-        # NTU Library only open from 9am to pm
-        if (8, 30) <= (hour, minute) <= (20, 30):
+        # NTU Library only open from 8:30 to 20:30
+        if not ((8, 30) <= (hour, minute) <= (20, 30)):
             print(1/0)
         START_TIME[update.message.chat_id] = update.message.text.strip(' ')
         ask_end_chope(bot, update)
@@ -126,12 +129,18 @@ def ans_end_chope(bot, update):
     strTime = update.message.text
     strTime = strTime.strip(' ')
     strTime = strTime.split(':')
+
+    # try to mitigate strTime[0] and strTime[1] isn't int encoded in a string
     try:
         hour = int(strTime[0])
         minute = int(strTime[1])
-        if (8, 30) <= (hour, minute) <= (20, 30):
+        # NTU Library only open from 8:30 to 20:30
+        if not ((8, 30) <= (hour, minute) <= (20, 30)):
             print(1/0)
-        END_TIME[update.message.chat_id] = update.message.text.strip(' ')
+
+        # rounding up to the nearest 30 min
+        minute = (minute + 29) // 30 * 30
+        END_TIME[update.message.chat_id] = str(hour) + ":" + str(minute)
         ask_captcha(bot, update, 1, None, False)
     except:
         ask_end_chope(bot, update)
@@ -379,6 +388,7 @@ def callback_handler(bot, update):
 
 
 def enc_time(time):
+    # encode time string into n-th 30mins in a day
     time = time.split(':')
     hour = int(time[0])
     minute = int(time[1])
@@ -418,8 +428,6 @@ def print_seat(bot, update, occ, tom=0):
     seatOcc = [occ[i] for i in range(1, occLen, 2)]
 
     today = datetime.now().weekday()
-    # nnt hapus
-    today -= 1
 
     for i in range(nSeat):
         seatOcc[i] = seatOcc[i][today]
@@ -428,7 +436,7 @@ def print_seat(bot, update, occ, tom=0):
     for i in range(nSeat):
         occTable.append([seatPrio[i]] * 50)
 
-    seatName.append("any empty seat")
+    seatName.append("any stray empty seat")
     occTable.append([0] * 50)
 
     for i in range(nSeat):
@@ -443,7 +451,10 @@ def print_seat(bot, update, occ, tom=0):
     enTime = enc_time(END_TIME[chatID])
 
     lastTake = nSeat
-    cumLen = -1
+    cumLen = -1    # Cumulative Length
+
+    # OPTIMIZE: could use DP next time
+    # Take the best seat greedily
     for j in range(stTime, enTime):
         curBest = nSeat
         cumLen += 1
@@ -554,8 +565,7 @@ def reboot(bot, update):
 def main():
     print('please try this bot with only student domain user')
     print('and run this program in ntu environment to access ntufbs')
-    print('run the bot ?: [Y/n]')
-    run = input()
+    run = input('run the bot [Y/n] : ')
     if run.lower() != 'y':
         return
 
